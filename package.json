@@ -1,21 +1,33 @@
 {
-  "name": "openui",
+  "name": "open-deep-coder",
   "version": "0.1.0",
-  "description": "A modern UI component library and design system",
-  "main": "index.js",
+  "description": "An agentic IDE with multi-agent coding workflow powered by LLM integration",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "echo \"Development server not configured yet\"",
-    "build": "echo \"Build script not configured yet\"",
-    "test": "echo \"Test script not configured yet\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write .",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "keywords": [
-    "ui",
-    "components",
-    "design-system",
-    "react",
-    "typescript"
+    "agentic-ide",
+    "ai-coding",
+    "multi-agent",
+    "llm-integration",
+    "development-tools",
+    "openrouter",
+    "ollama",
+    "lsp",
+    "mcp"
   ],
-  "author": "",
+  "author": "rcmiller01",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,5 +36,33 @@
   "bugs": {
     "url": "https://github.com/rcmiller01/openUI/issues"
   },
-  "homepage": "https://github.com/rcmiller01/openUI#readme"
+  "homepage": "https://github.com/rcmiller01/openUI#readme",
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "@tauri-apps/api": "^1.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "styled-components": "^6.1.0",
+    "zustand": "^4.4.0",
+    "axios": "^1.6.0",
+    "ws": "^8.14.0",
+    "json-schema": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/ws": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^4.4.0",
+    "vitest": "^0.34.0",
+    "@vitest/ui": "^0.34.0",
+    "@tauri-apps/cli": "^1.5.0"
+  }
 }

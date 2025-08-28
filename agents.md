@@ -1,8 +1,35 @@
-# agents.md
+# Agents Specification
 
 ## Overview
 
-Open‑Deep‑Coder is a graph‑of‑agents for software work. It reuses the research pattern (plan → act → observe → critique → iterate) but swaps in coding tools and code‑quality gates.
+Open‑Deep‑Coder is an agentic IDE implementing a graph‑of‑agents for intelligent software development. It combines the research pattern (plan → act → observe → critique → iterate) with advanced LLM integration, development tools, and a sophisticated user interface.
+
+## Core Capabilities
+
+### LLM Integration
+- **Remote LLMs** via OpenRouter for cloud-based models (GPT-4, Claude, etc.)
+- **Local LLMs** via Ollama for privacy and offline development
+- **RouteLLM** for intelligent request routing based on task type:
+  - Code generation/debugging → Code-specialized models
+  - Architecture/planning → Reasoning-focused models
+  - Documentation/testing → Language-oriented models
+  - Security analysis → Security-trained models
+
+### Development Environment
+- **LSP Integration** - Full language server protocol support
+- **MCP Servers** - Model Context Protocol for enhanced AI capabilities
+- **n8n Workflows** - Automation for CI/CD and development processes
+- **Chat-based Configuration** - Natural language setup for integrations
+- **Permission System** - Secure management of remote connections
+
+### User Interface
+- **Four Theme Variants**:
+  - Light Low Contrast - Gentle on eyes for extended use
+  - Light High Contrast - Enhanced readability with bright syntax highlighting
+  - Dark Low Contrast - Comfortable dark mode
+  - Dark High Contrast - Maximum contrast for accessibility
+- **Customizable Keybinds** - JSON-configurable keyboard shortcuts
+- **Integrated Chat** - Direct LLM interaction within the IDE
 
 ## Roles
 
@@ -89,6 +116,7 @@ change:
 
 > Implement as MCP tools, LangChain tools, or process‑local adapters.
 
+### Core Development Tools
 * **File System**
   * `fs.read(path) → {content}`
   * `fs.write(path, content) → {ok}`
@@ -102,8 +130,45 @@ change:
   * `lint.run(target)`, `format.run(target)`
 * **Security**
   * `secr.scan(target) → findings[]`
-* **HTTP** (read‑only docs access)
-  * `http.get(url) → {status, text}`
+
+### LLM Integration Tools
+* **OpenRouter Client**
+  * `openrouter.chat(model, messages, context?) → response`
+  * `openrouter.models() → available_models[]`
+* **Ollama Client**
+  * `ollama.chat(model, messages, context?) → response`
+  * `ollama.models() → local_models[]`
+* **RouteLLM Router**
+  * `route.classify(request) → task_type`
+  * `route.select_model(task_type, context?) → optimal_model`
+
+### Development Environment Tools
+* **LSP Manager**
+  * `lsp.start(language, workspace) → server_instance`
+  * `lsp.completion(file, position) → suggestions[]`
+  * `lsp.diagnostics(file) → errors[]`
+* **MCP Handler**
+  * `mcp.connect(server_url) → connection`
+  * `mcp.invoke(tool, params) → result`
+* **n8n Connector**
+  * `n8n.create_workflow(definition) → workflow_id`
+  * `n8n.execute(workflow_id, data) → result`
+
+### UI/UX Tools
+* **Theme Manager**
+  * `theme.set(variant) → {ok}` // light-low, light-high, dark-low, dark-high
+  * `theme.get_current() → current_theme`
+* **Keybind Manager**
+  * `keybind.load(config_path) → bindings`
+  * `keybind.save(bindings, config_path) → {ok}`
+* **Permission Gateway**
+  * `permission.request(resource, reason) → granted`
+  * `permission.check(resource) → has_access`
+
+### HTTP & External Access
+* **HTTP** (with permission control)
+  * `http.get(url, headers?) → {status, text}` // requires permission
+  * `http.post(url, data, headers?) → {status, response}` // requires permission
 
 ## Repo Conventions
 

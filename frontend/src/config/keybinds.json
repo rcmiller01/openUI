@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Open-Deep-Coder Keybinds Configuration",
+  "description": "Customizable keyboard shortcuts for the Open-Deep-Coder IDE",
+  "version": "1.0.0",
+  "keybinds": {
+    "editor": {
+      "save": "Ctrl+S",
+      "saveAll": "Ctrl+Shift+S",
+      "undo": "Ctrl+Z",
+      "redo": "Ctrl+Y",
+      "copy": "Ctrl+C",
+      "cut": "Ctrl+X",
+      "paste": "Ctrl+V",
+      "selectAll": "Ctrl+A",
+      "find": "Ctrl+F",
+      "findReplace": "Ctrl+H",
+      "goToLine": "Ctrl+G",
+      "commentLine": "Ctrl+/",
+      "commentBlock": "Ctrl+Shift+/",
+      "indentLine": "Tab",
+      "outdentLine": "Shift+Tab",
+      "duplicateLine": "Ctrl+Shift+D",
+      "deleteLine": "Ctrl+Shift+K",
+      "moveLineUp": "Alt+Up",
+      "moveLineDown": "Alt+Down",
+      "formatDocument": "Shift+Alt+F",
+      "quickFix": "Ctrl+."
+    },
+    "navigation": {
+      "goToDefinition": "F12",
+      "goToDeclaration": "Ctrl+F12",
+      "goToReferences": "Shift+F12",
+      "goToSymbol": "Ctrl+Shift+O",
+      "goToFile": "Ctrl+P",
+      "goBack": "Alt+Left",
+      "goForward": "Alt+Right",
+      "toggleSidebar": "Ctrl+B",
+      "toggleTerminal": "Ctrl+`",
+      "toggleExplorer": "Ctrl+Shift+E",
+      "toggleSearch": "Ctrl+Shift+F",
+      "toggleExtensions": "Ctrl+Shift+X"
+    },
+    "chat": {
+      "openChat": "Ctrl+Shift+C",
+      "sendMessage": "Enter",
+      "newConversation": "Ctrl+Shift+N",
+      "clearChat": "Ctrl+Shift+L",
+      "toggleChatPanel": "Ctrl+Shift+H"
+    },
+    "agents": {
+      "runPlanner": "Ctrl+Shift+P",
+      "runImplementer": "Ctrl+Shift+I",
+      "runVerifier": "Ctrl+Shift+V",
+      "runReviewer": "Ctrl+Shift+R",
+      "stopAllAgents": "Ctrl+Shift+Escape",
+      "showAgentStatus": "Ctrl+Shift+A"
+    },
+    "development": {
+      "runTests": "Ctrl+Shift+T",
+      "debugStart": "F5",
+      "debugStop": "Shift+F5",
+      "debugStepOver": "F10",
+      "debugStepInto": "F11",
+      "debugStepOut": "Shift+F11",
+      "toggleBreakpoint": "F9",
+      "runLinter": "Ctrl+Shift+L",
+      "runFormatter": "Ctrl+Shift+F"
+    },
+    "llm": {
+      "switchModel": "Ctrl+Shift+M",
+      "toggleLocalRemote": "Ctrl+Shift+O",
+      "showModelInfo": "Ctrl+Shift+Q",
+      "regenerateResponse": "Ctrl+R"
+    },
+    "themes": {
+      "toggleTheme": "Ctrl+Shift+T",
+      "lightLow": "Ctrl+1",
+      "lightHigh": "Ctrl+2",
+      "darkLow": "Ctrl+3",
+      "darkHigh": "Ctrl+4"
+    },
+    "window": {
+      "newWindow": "Ctrl+Shift+N",
+      "closeWindow": "Ctrl+Shift+W",
+      "reloadWindow": "Ctrl+R",
+      "toggleFullscreen": "F11",
+      "zoomIn": "Ctrl+=",
+      "zoomOut": "Ctrl+-",
+      "resetZoom": "Ctrl+0"
+    },
+    "misc": {
+      "showCommandPalette": "Ctrl+Shift+P",
+      "openSettings": "Ctrl+,",
+      "openKeybinds": "Ctrl+K Ctrl+S",
+      "showHelp": "F1",
+      "showAbout": "Ctrl+Shift+A"
+    }
+  },
+  "customKeybinds": {
+    "_description": "User-defined custom keybinds override the defaults above",
+    "_examples": {
+      "myCustomAction": "Ctrl+Alt+Z",
+      "anotherAction": "Shift+F2"
+    }
+  },
+  "metadata": {
+    "createdAt": "2025-08-28T12:00:00Z",
+    "lastModified": "2025-08-28T12:00:00Z",
+    "platform": "cross-platform",
+    "notes": [
+      "Use Cmd instead of Ctrl on macOS",
+      "Alt can be substituted with Option on macOS",
+      "Sequences like 'Ctrl+K Ctrl+S' require pressing keys in order",
+      "Custom keybinds take precedence over defaults"
+    ]
+  }
+}

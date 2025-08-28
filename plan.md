@@ -120,6 +120,70 @@
   - Performance: Workflow efficiency improved
   - Reliability: Retry and error handling robust
 
+### OD‑8: LLM Integration Infrastructure
+- **Title:** Implement LLM integration with OpenRouter and Ollama
+- **Rationale:** Core capability for agentic IDE with flexible model selection
+- **Status:** PENDING
+- **Owner:** Implementer
+- **Steps:**
+  1. Create OpenRouter client with API key management
+  2. Implement Ollama local client integration
+  3. Design RouteLLM request classification system
+  4. Build model selection and routing logic
+  5. Add context management for conversations
+- **Acceptance:**
+  - Tests: Both remote and local LLM clients work
+  - Quality: Smart routing selects appropriate models
+  - Security: API keys securely managed
+
+### OD‑9: Theme System and UI Framework
+- **Title:** Implement four-variant theme system with customizable keybinds
+- **Rationale:** Professional IDE experience with accessibility options
+- **Status:** PENDING
+- **Owner:** Implementer
+- **Steps:**
+  1. Design theme architecture (light/dark + low/high contrast)
+  2. Implement syntax highlighting brightness control
+  3. Create JSON-based keybind configuration system
+  4. Build theme switching UI components
+  5. Add keybind customization interface
+- **Acceptance:**
+  - Tests: All four themes render correctly
+  - Quality: High contrast modes improve readability
+  - UX: Keybinds are fully customizable and persistent
+
+### OD‑10: Development Tools Integration
+- **Title:** Integrate LSP, MCP, and n8n with chat-based setup
+- **Rationale:** Comprehensive development environment with AI-assisted configuration
+- **Status:** PENDING
+- **Owner:** Implementer
+- **Steps:**
+  1. Implement LSP server management and communication
+  2. Create MCP server integration framework
+  3. Build n8n workflow automation connector
+  4. Design chat-based configuration interface
+  5. Implement permission system for remote connections
+- **Acceptance:**
+  - Tests: LSP provides intelligent code completion
+  - Integration: MCP and n8n work through chat interface
+  - Security: Permission system blocks unauthorized access
+
+### OD‑11: Chat Interface and Frontend
+- **Title:** Build integrated chat interface with Monaco editor
+- **Rationale:** Core user interaction for the agentic IDE
+- **Status:** PENDING
+- **Owner:** Implementer
+- **Steps:**
+  1. Integrate Monaco editor with theme system
+  2. Build chat interface component
+  3. Implement conversation context management
+  4. Create agent status and workflow visualization
+  5. Add real-time collaboration features
+- **Acceptance:**
+  - Tests: Chat interface communicates with LLMs
+  - Quality: Monaco editor fully integrated with themes
+  - UX: Smooth interaction between chat and code editing
+
 ## Notes
 
 - **Language:** Python (default)

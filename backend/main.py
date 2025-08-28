@@ -7,27 +7,54 @@ Handles LLM integration, agent coordination, and development tools.
 
 import asyncio
 import logging
+import os
+import sys
 from contextlib import asynccontextmanager
 from typing import List, Optional
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from .agents import AgentManager
-from .integrations.llm import LLMManager
-from .integrations.lsp import LSPManager
-from .integrations.mcp import MCPManager
-from .integrations.n8n import N8NManager
-from .api.models import (
-    ChatMessage, 
-    ChatRequest, 
-    ChatResponse,
-    AgentStatus,
-    LLMModel,
-    TaskRequest,
-)
+try:
+    from backend.agents import AgentManager
+    from backend.integrations.llm import LLMManager
+    from backend.integrations.lsp import LSPManager
+    from backend.integrations.mcp import MCPManager
+    from backend.integrations.n8n import N8NManager
+    from backend.api.models import (
+        ChatMessage, 
+        ChatRequest, 
+        ChatResponse,
+        AgentStatus,
+        LLMModel,
+        TaskRequest,
+        FileInfo,
+        FileContent,
+        FileOperation,
+    )
+except ImportError:
+    # Fallback for when running as script
+    from agents import AgentManager
+    from integrations.llm import LLMManager
+    from integrations.lsp import LSPManager
+    from integrations.mcp import MCPManager
+    from integrations.n8n import N8NManager
+    from api.models import (
+        ChatMessage, 
+        ChatRequest, 
+        ChatResponse,
+        AgentStatus,
+        LLMModel,
+        TaskRequest,
+        FileInfo,
+        FileContent,
+        FileOperation,
+    )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -246,6 +273,94 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
         await websocket.close()
 
+# File system endpoints
+@app.get("/api/files")
+async def list_files(path: str = "."):
+    """List files and directories in a path"""
+    import os
+    from datetime import datetime
+    
+    try:
+        abs_path = os.path.abspath(path)
+        if not os.path.exists(abs_path):
+            raise HTTPException(status_code=404, detail="Path not found")
+        
+        items = []
+        for item in os.listdir(abs_path):
+            item_path = os.path.join(abs_path, item)
+            stat = os.stat(item_path)
+            
+            items.append(FileInfo(
+                path=item_path,
+                name=item,
+                size=stat.st_size,
+                modified=datetime.fromtimestamp(stat.st_mtime),
+                is_directory=os.path.isdir(item_path),
+                permissions=["read", "write"] if os.access(item_path, os.W_OK) else ["read"]
+            ))
+        
+        return items
+    except Exception as e:
+        logger.error(f"Error listing files: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/files/content")
+async def get_file_content(path: str):
+    """Get file content"""
+    import os
+    from datetime import datetime
+    
+    try:
+        abs_path = os.path.abspath(path)
+        if not os.path.exists(abs_path) or os.path.isdir(abs_path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        with open(abs_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        stat = os.stat(abs_path)
+        
+        return FileContent(
+            path=abs_path,
+            content=content,
+            encoding="utf-8",
+            modified=datetime.fromtimestamp(stat.st_mtime)
+        )
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File is not a text file")
+    except Exception as e:
+        logger.error(f"Error reading file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/files/content")
+async def save_file_content(operation: FileOperation):
+    """Save file content"""
+    import os
+    
+    try:
+        abs_path = os.path.abspath(operation.path)
+        
+        if operation.operation == "write":
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+            
+            with open(abs_path, 'w', encoding='utf-8') as f:
+                f.write(operation.content or "")
+            
+            return {"status": "success", "path": abs_path}
+        
+        elif operation.operation == "delete":
+            if os.path.exists(abs_path):
+                os.remove(abs_path)
+            return {"status": "success", "path": abs_path}
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported operation: {operation.operation}")
+            
+    except Exception as e:
+        logger.error(f"Error with file operation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Development endpoints (for testing)
 @app.get("/api/dev/test-llm")
 async def test_llm():
@@ -254,8 +369,9 @@ async def test_llm():
         raise HTTPException(status_code=500, detail="LLM manager not initialized")
     
     try:
+        test_message = ChatMessage(role="user", content="Hello, are you working?")
         response = await llm_manager.chat_completion(
-            messages=[{"role": "user", "content": "Hello, are you working?"}],
+            messages=[test_message],
             model=None  # Use default model
         )
         return {"status": "success", "response": response}

@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import * as monaco from 'monaco-editor';
 import { useAppStore } from '@store';
+import apiClient from '../services/api';
 
 const EditorContainer = styled.div`
   flex: 1;
@@ -72,12 +73,63 @@ export default function Editor() {
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [fileContents, setFileContents] = useState<Map<string, string>>(new Map());
+  const [isLoading, setIsLoading] = useState(false);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Configure Monaco Editor theme based on current theme
   useEffect(() => {
     const currentTheme = theme.includes('dark') ? 'vs-dark' : 'vs';
     monaco.editor.setTheme(currentTheme);
   }, [theme]);
+
+  // Load file content when a file is opened
+  useEffect(() => {
+    if (!activeFile || fileContents.has(activeFile)) return;
+
+    const loadFileContent = async () => {
+      setIsLoading(true);
+      try {
+        const content = await apiClient.getFileContent(activeFile);
+        if (content) {
+          setFileContents(prev => new Map(prev.set(activeFile, content.content)));
+        } else {
+          // File doesn't exist or is empty
+          setFileContents(prev => new Map(prev.set(activeFile, '')));
+        }
+      } catch (error) {
+        console.error('Error loading file content:', error);
+        setFileContents(prev => new Map(prev.set(activeFile, `// Error loading file: ${error}`)));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFileContent();
+  }, [activeFile, fileContents]);
+
+  // Auto-save functionality
+  const saveFile = async (filePath: string, content: string) => {
+    try {
+      await apiClient.saveFileContent(filePath, content);
+      console.log('File saved:', filePath);
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+  };
+
+  const scheduleAutoSave = (filePath: string, content: string) => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+
+    if (settings.autoSave) {
+      const timeout = setTimeout(() => {
+        saveFile(filePath, content);
+      }, settings.autoSaveDelay || 1000);
+      setAutoSaveTimeout(timeout);
+    }
+  };
 
   // Initialize Monaco Editor
   useEffect(() => {
@@ -88,9 +140,11 @@ export default function Editor() {
       editorRef.current.dispose();
     }
 
+    const content = fileContents.get(activeFile) || (isLoading ? '// Loading...' : '');
+
     // Create new editor instance
     editorRef.current = monaco.editor.create(containerRef.current, {
-      value: `// Welcome to Open-Deep-Coder!\n// This is a placeholder for file: ${activeFile}\n\nfunction hello() {\n  console.log("Hello from the agentic IDE!");\n}\n\n// Features coming soon:\n// - Real file loading\n// - LSP integration\n// - AI-powered code completion\n// - Multi-agent assistance`,
+      value: content,
       language: getLanguageFromFilePath(activeFile),
       theme: theme.includes('dark') ? 'vs-dark' : 'vs',
       fontSize: settings.fontSize,
@@ -108,8 +162,13 @@ export default function Editor() {
 
     // Handle content changes
     editorRef.current.onDidChangeModelContent(() => {
-      // TODO: Implement auto-save functionality
-      // TODO: Trigger agent analysis on content changes
+      const currentContent = editorRef.current?.getValue() || '';
+      
+      // Update local content cache
+      setFileContents(prev => new Map(prev.set(activeFile, currentContent)));
+      
+      // Schedule auto-save
+      scheduleAutoSave(activeFile, currentContent);
     });
 
     return () => {
@@ -117,7 +176,7 @@ export default function Editor() {
         editorRef.current.dispose();
       }
     };
-  }, [activeFile, theme, settings]);
+  }, [activeFile, theme, settings, fileContents, isLoading]);
 
   const getLanguageFromFilePath = (filePath: string): string => {
     const extension = filePath.split('.').pop()?.toLowerCase();

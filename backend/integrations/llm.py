@@ -251,6 +251,9 @@ class LLMManager:
         if not self.openrouter_client:
             raise ValueError("OpenRouter client not initialized")
         
+        if not self.openrouter_api_key:
+            raise ValueError("OpenRouter API key not provided")
+        
         # Convert messages to OpenAI format
         openai_messages = [
             {"role": msg.role, "content": msg.content}
@@ -261,13 +264,17 @@ class LLMManager:
             "model": model,
             "messages": openai_messages,
             "stream": stream,
-            **kwargs
+            "max_tokens": kwargs.get("max_tokens", 2000),
+            "temperature": kwargs.get("temperature", 0.7),
         }
         
         try:
             response = await self.openrouter_client.post("/chat/completions", json=payload)
             response.raise_for_status()
             data = response.json()
+            
+            if "error" in data:
+                raise Exception(f"OpenRouter API error: {data['error']['message']}")
             
             choice = data["choices"][0]
             message_data = choice["message"]
@@ -283,9 +290,20 @@ class LLMManager:
                 message=response_message,
                 model=model,
                 tokens=data.get("usage", {}).get("total_tokens", 0),
-                finish_reason=choice.get("finish_reason", "stop")
+                finish_reason=choice.get("finish_reason", "stop"),
+                context={"provider": "openrouter"}
             )
             
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise Exception("Invalid OpenRouter API key")
+            elif e.response.status_code == 429:
+                raise Exception("OpenRouter rate limit exceeded")
+            elif e.response.status_code == 400:
+                error_data = e.response.json()
+                raise Exception(f"Invalid request: {error_data.get('error', {}).get('message', str(e))}")
+            else:
+                raise Exception(f"OpenRouter API error ({e.response.status_code}): {e}")
         except Exception as e:
             logger.error(f"OpenRouter chat completion error: {e}")
             raise

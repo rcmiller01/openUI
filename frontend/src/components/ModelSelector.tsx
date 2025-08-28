@@ -3,242 +3,151 @@ import styled from 'styled-components';
 import { useAppStore } from '@store';
 
 const SelectorContainer = styled.div`
-  position: relative;
-`;
-
-const SelectorButton = styled.button`
-  width: 100%;
-  padding: 8px 12px;
-  background-color: ${props => props.theme.colors.bg.primary};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: 6px;
-  color: ${props => props.theme.colors.text.primary};
-  font-size: 12px;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  
-  &:hover {
-    border-color: ${props => props.theme.colors.border.accent};
-  }
+  gap: 8px;
+  margin-bottom: 8px;
 `;
 
-const Dropdown = styled.div<{ isOpen: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: ${props => props.theme.colors.bg.primary};
-  border: 1px solid ${props => props.theme.colors.border.primary};
-  border-radius: 6px;
-  margin-top: 4px;
-  z-index: 1000;
-  max-height: 200px;
-  overflow-y: auto;
-  display: ${props => props.isOpen ? 'block' : 'none'};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-`;
-
-const ModelOption = styled.div<{ isSelected: boolean }>`
-  padding: 8px 12px;
+const SelectorLabel = styled.label`
   font-size: 12px;
-  cursor: pointer;
-  background-color: ${props => props.isSelected ? props.theme.colors.ui.selection : 'transparent'};
-  color: ${props => props.theme.colors.text.primary};
-  
-  &:hover {
-    background-color: ${props => props.theme.colors.ui.hover};
-  }
-`;
-
-const ModelInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const ModelName = styled.div`
+  color: ${props => props.theme.colors.text.secondary};
   font-weight: 500;
 `;
 
-const ModelDetails = styled.div`
-  font-size: 10px;
-  color: ${props => props.theme.colors.text.muted};
+const Select = styled.select`
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 4px;
+  background-color: ${props => props.theme.colors.bg.primary};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 12px;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.border.accent};
+  }
+  
+  option {
+    background-color: ${props => props.theme.colors.bg.primary};
+    color: ${props => props.theme.colors.text.primary};
+  }
 `;
 
 const ProviderBadge = styled.span<{ provider: string }>`
-  display: inline-block;
-  padding: 2px 6px;
+  font-size: 10px;
+  padding: 2px 4px;
   border-radius: 3px;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-right: 6px;
+  font-weight: 500;
   background-color: ${props => {
     switch (props.provider) {
-      case 'openrouter': return '#4a90e2';
-      case 'ollama': return '#2ecc71';
-      default: return props.theme.colors.ui.disabled;
+      case 'openrouter': return '#4CAF50';
+      case 'ollama': return '#2196F3';
+      default: return props.theme.colors.ui.hover;
     }
   }};
   color: white;
 `;
 
-const LoadingState = styled.div`
-  padding: 12px;
-  text-align: center;
-  font-size: 12px;
+const ModelInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
   color: ${props => props.theme.colors.text.muted};
 `;
 
-export default function ModelSelector() {
-  const { 
-    selectedModel, 
-    availableModels, 
-    setSelectedModel, 
-    setAvailableModels,
-    isLocalMode 
-  } = useAppStore();
+const ToggleButton = styled.button<{ active: boolean }>`
+  padding: 4px 8px;
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 4px;
+  background-color: ${props => 
+    props.active 
+      ? props.theme.colors.text.accent 
+      : props.theme.colors.bg.primary
+  };
+  color: ${props => 
+    props.active 
+      ? 'white' 
+      : props.theme.colors.text.primary
+  };
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
   
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Mock fetch models - replace with actual API call
-  useEffect(() => {
-    const fetchModels = async () => {
-      setIsLoading(true);
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockModels = [
-          {
-            id: 'gpt-4',
-            name: 'GPT-4',
-            provider: 'openrouter' as const,
-            capabilities: ['chat', 'code'],
-            context_length: 8192,
-            is_available: true,
-            description: 'Most capable model for complex reasoning'
-          },
-          {
-            id: 'gpt-3.5-turbo',
-            name: 'GPT-3.5 Turbo',
-            provider: 'openrouter' as const,
-            capabilities: ['chat', 'code'],
-            context_length: 4096,
-            is_available: true,
-            description: 'Fast and efficient for most tasks'
-          },
-          {
-            id: 'claude-3-sonnet',
-            name: 'Claude-3 Sonnet',
-            provider: 'openrouter' as const,
-            capabilities: ['chat', 'code', 'analysis'],
-            context_length: 200000,
-            is_available: true,
-            description: 'Excellent for code analysis and long contexts'
-          },
-          {
-            id: 'llama2:7b',
-            name: 'Llama 2 7B',
-            provider: 'ollama' as const,
-            capabilities: ['chat'],
-            context_length: 4096,
-            is_available: true,
-            description: 'Local model for privacy'
-          },
-          {
-            id: 'codellama:13b',
-            name: 'Code Llama 13B',
-            provider: 'ollama' as const,
-            capabilities: ['code'],
-            context_length: 16384,
-            is_available: true,
-            description: 'Specialized for code generation'
-          }
-        ];
-        
-        setAvailableModels(mockModels);
-      } catch (error) {
-        console.error('Failed to fetch models:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  &:hover {
+    background-color: ${props => 
+      props.active 
+        ? props.theme.colors.text.accent 
+        : props.theme.colors.ui.hover
     };
+  }
+`;
 
-    fetchModels();
-  }, [setAvailableModels]);
+export default function ModelSelector() {
+  const {
+    availableModels,
+    selectedModel,
+    isLocalMode,
+    setSelectedModel,
+    toggleLocalMode
+  } = useAppStore();
 
-  const filteredModels = availableModels.filter(model => 
-    isLocalMode ? model.provider === 'ollama' : model.provider === 'openrouter'
-  );
+  const filteredModels = isLocalMode 
+    ? availableModels.filter(m => m.provider === 'ollama')
+    : availableModels.filter(m => m.provider === 'openrouter');
 
   const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
 
-  const handleModelSelect = (modelId: string) => {
-    setSelectedModel(modelId);
-    setIsOpen(false);
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedModel(event.target.value);
   };
 
-  const getDisplayName = () => {
-    if (selectedModelInfo) {
-      return selectedModelInfo.name;
-    }
-    return 'Auto Select';
+  const getModelDisplayName = (model: typeof availableModels[0]) => {
+    const name = model.name.length > 30 ? model.name.substring(0, 30) + '...' : model.name;
+    return `${name} (${model.provider})`;
   };
 
   return (
     <SelectorContainer>
-      <SelectorButton onClick={() => setIsOpen(!isOpen)}>
-        <span>🧠 {getDisplayName()}</span>
-        <span>{isOpen ? '▲' : '▼'}</span>
-      </SelectorButton>
+      <SelectorLabel>Model:</SelectorLabel>
       
-      <Dropdown isOpen={isOpen}>
-        {isLoading ? (
-          <LoadingState>Loading models...</LoadingState>
-        ) : (
-          <>
-            <ModelOption
-              isSelected={!selectedModel}
-              onClick={() => handleModelSelect('')}
-            >
-              <ModelInfo>
-                <ModelName>🎯 Auto Select</ModelName>
-                <ModelDetails>Automatically choose the best model for each task</ModelDetails>
-              </ModelInfo>
-            </ModelOption>
-            
-            {filteredModels.map((model) => (
-              <ModelOption
-                key={model.id}
-                isSelected={model.id === selectedModel}
-                onClick={() => handleModelSelect(model.id)}
-              >
-                <ModelInfo>
-                  <ModelName>
-                    <ProviderBadge provider={model.provider}>
-                      {model.provider}
-                    </ProviderBadge>
-                    {model.name}
-                  </ModelName>
-                  <ModelDetails>
-                    {model.description} • {model.context_length.toLocaleString()} tokens
-                  </ModelDetails>
-                </ModelInfo>
-              </ModelOption>
-            ))}
-            
-            {filteredModels.length === 0 && (
-              <LoadingState>
-                No {isLocalMode ? 'local' : 'remote'} models available
-              </LoadingState>
-            )}
-          </>
-        )}
-      </Dropdown>
+      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        <ToggleButton 
+          active={!isLocalMode}
+          onClick={() => !isLocalMode || toggleLocalMode()}
+          title="Use remote models via OpenRouter"
+        >
+          Remote
+        </ToggleButton>
+        <ToggleButton 
+          active={isLocalMode}
+          onClick={() => isLocalMode || toggleLocalMode()}
+          title="Use local models via Ollama"
+        >
+          Local
+        </ToggleButton>
+      </div>
+      
+      <Select value={selectedModel || ''} onChange={handleModelChange}>
+        <option value="">Auto-select model</option>
+        {filteredModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {getModelDisplayName(model)}
+          </option>
+        ))}
+      </Select>
+      
+      {selectedModelInfo && (
+        <ModelInfo>
+          <ProviderBadge provider={selectedModelInfo.provider}>
+            {selectedModelInfo.provider}
+          </ProviderBadge>
+          <span>{selectedModelInfo.context_length.toLocaleString()} ctx</span>
+        </ModelInfo>
+      )}
     </SelectorContainer>
   );
 }

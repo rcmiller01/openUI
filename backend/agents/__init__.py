@@ -6,12 +6,28 @@ Coordinates the multi-agent workflow with specialized agents for different devel
 
 import asyncio
 import logging
+import os
+import sys
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from enum import Enum
 
-from .integrations.llm import LLMManager
-from .api.models import AgentStatus, TaskResult
+# Add parent directories to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+try:
+    from backend.integrations.llm import LLMManager
+    from backend.api.models import AgentStatus, TaskResult
+except ImportError:
+    try:
+        from integrations.llm import LLMManager
+        from api.models import AgentStatus, TaskResult
+    except ImportError:
+        # Minimal fallback
+        LLMManager = None
+        AgentStatus = None
+        TaskResult = None
 
 logger = logging.getLogger(__name__)
 

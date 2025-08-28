@@ -5,6 +5,7 @@ import { ChatMessage } from '@store';
 import MessageBubble from './MessageBubble';
 import ModelSelector from './ModelSelector';
 import AgentStatusIndicator from './AgentStatusIndicator';
+import apiClient from '../services/api';
 
 const ChatContainer = styled.div`
   width: 400px;
@@ -128,9 +129,11 @@ export default function ChatPanel() {
     conversations,
     activeConversationId,
     selectedModel,
+    availableModels,
     toggleChatPanel,
     addMessage,
     createConversation,
+    setAvailableModels,
     agents
   } = useAppStore();
 
@@ -139,6 +142,27 @@ export default function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+  // Load available models on mount
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const models = await apiClient.getAvailableModels();
+        setAvailableModels(models);
+      } catch (error) {
+        console.error('Error loading models:', error);
+      }
+    };
+    
+    loadModels();
+  }, [setAvailableModels]);
+
+  // Create initial conversation if none exists
+  useEffect(() => {
+    if (conversations.length === 0) {
+      createConversation('Welcome to Open-Deep-Coder');
+    }
+  }, [conversations.length, createConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,20 +182,34 @@ export default function ChatPanel() {
     setIsLoading(true);
 
     try {
-      // TODO: Call backend API for LLM response
-      // For now, simulate a response
-      setTimeout(() => {
-        const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-          role: 'assistant',
-          content: `I understand you said: "${userMessage.content}". I'm an AI assistant helping with your coding workflow. How can I assist you further?`,
-          model: selectedModel || 'gpt-3.5-turbo'
-        };
-        
-        addMessage(activeConversationId, assistantMessage);
-        setIsLoading(false);
-      }, 1000);
+      // Call backend API for LLM response
+      const response = await apiClient.chatCompletion({
+        messages: [...(activeConversation?.messages || []), userMessage],
+        model: selectedModel || undefined,
+        context: {
+          conversation_id: activeConversationId
+        }
+      });
+      
+      const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+        role: 'assistant',
+        content: response.message.content,
+        model: response.model,
+        tokens: response.tokens
+      };
+      
+      addMessage(activeConversationId, assistantMessage);
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Add error message to chat
+      const errorMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+        role: 'assistant',
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`
+      };
+      
+      addMessage(activeConversationId, errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };

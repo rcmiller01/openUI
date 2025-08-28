@@ -75,3 +75,11 @@ jspm_packages/
 
 # Storybook build outputs
 storybook-static
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+backend.log
+frontend.log

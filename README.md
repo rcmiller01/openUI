@@ -86,24 +86,73 @@ The system consists of multiple layers working in harmony:
 
 ## Quickstart
 
+### Prerequisites
+- Python 3.9+ with pip
+- Node.js 18+ with npm
+- Git for version control
+
+### Quick Setup
+
+**Option 1: Automated Setup (Recommended)**
+
+**Windows:**
+```cmd
+start-dev.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start-dev.sh
+./start-dev.sh
+```
+
+**Option 2: Manual Setup**
+
 ```bash
 # Clone the repository
 git clone https://github.com/rcmiller01/openUI.git
 cd openUI
 
-# Set up development environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e .[dev]
+# Install frontend dependencies
+npm install
 
-# Run tests
-pytest
+# Install backend dependencies  
+pip install fastapi uvicorn httpx pydantic
 
-# Run quality checks
-ruff check .
-black --check .
-mypy src
+# Start backend (in one terminal)
+cd backend
+python test_server.py
+
+# Start frontend (in another terminal)
+npm run dev
 ```
+
+### Access the IDE
+- **Frontend**: http://localhost:1420
+- **Backend API**: http://127.0.0.1:8000
+- **API Docs**: http://127.0.0.1:8000/docs
+
+### LLM Integration (Optional)
+
+1. **For OpenRouter (Remote Models)**:
+   - Get API key from https://openrouter.ai/
+   - Copy `.env.example` to `.env`
+   - Add: `OPENROUTER_API_KEY=your_key_here`
+
+2. **For Ollama (Local Models)**:
+   - Install from https://ollama.ai/
+   - Run: `ollama pull llama2`
+
+### Current Working Features
+- ✅ **File Explorer**: Browse and open files
+- ✅ **Monaco Editor**: Full syntax highlighting and editing
+- ✅ **AI Chat**: Mock responses (real LLM with API keys)
+- ✅ **Theme System**: 4 theme variants
+- ✅ **Terminal**: Integrated terminal with command history
+- ✅ **Agent Status**: Monitor multi-agent system
+- ✅ **Real-time Updates**: WebSocket communication
+
+---
 
 ## Features
 

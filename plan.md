@@ -88,6 +88,38 @@
   - Quality: All dependencies pinned and documented
   - Compliance: SECURITY.md checklist complete
 
+### OD‑6: Explore external frameworks
+- **Title:** Explore OpenHands and OpenDevin as inspiration or tool sources
+- **Rationale:** Leverage existing multi-agent frameworks for enhanced capabilities
+- **Status:** PENDING
+- **Owner:** Researcher
+- **Steps:**
+  1. Research OpenHands multi-modal tool architecture
+  2. Analyze OpenDevin's SWE-Bench evaluation approach
+  3. Identify reusable components and patterns
+  4. Document integration opportunities
+  5. Propose compatibility layers or adapters
+- **Acceptance:**
+  - Research: Comprehensive analysis documented
+  - Integration: Clear path for tool reuse identified
+  - Compatibility: Adapter interfaces defined
+
+### OD‑7: Extend LangGraph capabilities
+- **Title:** Extend LangGraph for dynamic agent spawning and parallel Implementers
+- **Rationale:** Enable advanced workflow capabilities with parallel processing
+- **Status:** PENDING
+- **Owner:** Implementer
+- **Steps:**
+  1. Design custom LangGraph nodes for agent spawning
+  2. Implement parallel Implementer coordination
+  3. Add dynamic branching for complex workflows
+  4. Create retry mechanisms for flaky tests
+  5. Implement branch merging heuristics
+- **Acceptance:**
+  - Tests: Parallel agent coordination works correctly
+  - Performance: Workflow efficiency improved
+  - Reliability: Retry and error handling robust
+
 ## Notes
 
 - **Language:** Python (default)

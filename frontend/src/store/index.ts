@@ -85,9 +85,11 @@ export interface AppState {
   // Development Tools
   isTerminalOpen: boolean;
   isSidebarOpen: boolean;
+  isAdvancedToolsOpen: boolean;
   sidebarWidth: number;
   toggleTerminal: () => void;
   toggleSidebar: () => void;
+  setIsAdvancedToolsOpen: (isOpen: boolean) => void;
   setSidebarWidth: (width: number) => void;
   
   // Permissions
@@ -248,9 +250,11 @@ export const useAppStore = create<AppState>()(
       // Development Tools
       isTerminalOpen: false,
       isSidebarOpen: true,
+      isAdvancedToolsOpen: false,
       sidebarWidth: 300,
       toggleTerminal: () => set((state) => ({ isTerminalOpen: !state.isTerminalOpen })),
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+      setIsAdvancedToolsOpen: (isOpen) => set({ isAdvancedToolsOpen: isOpen }),
       setSidebarWidth: (width) => set({ sidebarWidth: width }),
       
       // Permissions

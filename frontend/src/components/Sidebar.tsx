@@ -52,8 +52,6 @@ const SectionHeader = styled.div`
   }
 `;
 
-
-
 const ToggleButton = styled.button`
   background: none;
   border: none;
@@ -68,10 +66,28 @@ const ToggleButton = styled.button`
   }
 `;
 
-
+// New styled component for Advanced Tools link
+const AdvancedToolsLink = styled.div`
+  padding: 8px 16px;
+  font-size: 13px;
+  color: ${props => props.theme.colors.text.primary};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: ${props => props.theme.colors.ui.hover};
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
 
 export default function Sidebar() {
-  const { toggleSidebar } = useAppStore();
+  const { toggleSidebar, setIsAdvancedToolsOpen } = useAppStore();
   const [activeSection, setActiveSection] = useState<string>('explorer');
 
   return (
@@ -132,6 +148,13 @@ export default function Sidebar() {
               LSP, MCP, and n8n integrations coming soon...
             </div>
           )}
+        </Section>
+
+        {/* Advanced Tools Link */}
+        <Section>
+          <AdvancedToolsLink onClick={() => setIsAdvancedToolsOpen(true)}>
+            🛠️ Advanced Tools
+          </AdvancedToolsLink>
         </Section>
       </SidebarContent>
     </SidebarContainer>

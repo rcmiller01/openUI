@@ -39,6 +39,7 @@ Open‑Deep‑Coder is our version of an intelligent, agent-powered IDE that com
 - **n8n Integration** - Workflow automation for CI/CD and development processes
 - **Chat-based setup** - Create and configure integrations through natural language
 - **Permission system** - Secure remote connection management with user consent
+- **Advanced Tools Dashboard** - Comprehensive interface for debugging, Git operations, and agent coordination
 
 ### 🔒 Security & Privacy
 - **Permission-based access** for all remote connections and external services
@@ -69,12 +70,14 @@ The system consists of multiple layers working in harmony:
 - **MCP Handler** - Manages Model Context Protocol connections
 - **n8n Connector** - Automates workflow processes
 - **Permission Gateway** - Controls access to external resources
+- **Advanced Tools Dashboard** - Centralized interface for enhanced capabilities
 
 ### Frontend Layer
 - **Theme Engine** - Manages four contrast/color variants
 - **Keybind Manager** - Handles customizable keyboard shortcuts
 - **Chat Interface** - Provides natural language interaction
 - **Code Editor** - Enhanced Monaco editor with AI integration
+- **Advanced Tools Dashboard** - Comprehensive tool management interface
 
 ## Core Workflow
 
@@ -143,6 +146,47 @@ npm run dev
    - Install from https://ollama.ai/
    - Run: `ollama pull llama2`
 
+### Advanced Tools Integration
+
+The Advanced Tools Dashboard provides enhanced development capabilities:
+
+1. **Access the Dashboard**:
+   - Open the sidebar in the IDE
+   - Click on "Advanced Tools" to open the dashboard
+
+2. **Tool Discovery**:
+   - Discover all available tools across LSP, MCP, n8n, and debugging systems
+   - View tool capabilities and usage analytics
+
+3. **Debugging**:
+   - Start debugging sessions for Python, TypeScript, JavaScript, Rust, and Go
+   - Set breakpoints, inspect variables, and control execution flow
+
+4. **Language Server Protocol**:
+   - Real-time code completion and hover information
+   - Syntax error detection and diagnostics
+
+5. **n8n Workflow Automation**:
+   - Execute predefined workflows
+   - Automate Git operations and CI/CD processes
+
+6. **Git Integration**:
+   - Commit, push, and pull operations
+   - Repository status monitoring and file staging
+
+7. **Agent Coordination**:
+   - Monitor agent status and performance
+   - Submit tasks and workflows for execution
+
+### Comprehensive Documentation
+
+For detailed information about all integration capabilities, see our comprehensive documentation:
+
+- [Integration Guide](docs/INTEGRATION_GUIDE.md) - Complete overview of all capabilities
+- [API Documentation](docs/API_DOCUMENTATION.md) - Full API endpoint reference
+- [Quickstart: Enhanced Integrations](docs/QUICKSTART_INTEGRATIONS.md) - Step-by-step setup guide
+- [Individual Integration Guides](docs/) - Detailed guides for each integration system
+
 ### Current Working Features
 - ✅ **File Explorer**: Browse and open files
 - ✅ **Monaco Editor**: Full syntax highlighting and editing
@@ -151,6 +195,7 @@ npm run dev
 - ✅ **Terminal**: Integrated terminal with command history
 - ✅ **Agent Status**: Monitor multi-agent system
 - ✅ **Real-time Updates**: WebSocket communication
+- ✅ **Advanced Tools Dashboard**: Comprehensive development tool integration
 
 ---
 
@@ -162,6 +207,7 @@ npm run dev
 - **Automated workflows** with GitHub Actions CI/CD
 - **Extensible tool system** supporting MCP and LangChain tools
 - **Human approval gates** for critical operations
+- **Advanced debugging and development tools**
 
 ## Project Structure
 

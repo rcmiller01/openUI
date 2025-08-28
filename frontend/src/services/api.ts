@@ -322,6 +322,401 @@ class ApiClient {
     }
   }
 
+  // Enhanced LSP Methods
+  async getLSPServers(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/lsp/servers`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting LSP servers:', error);
+      return [];
+    }
+  }
+
+  async getCodeCompletion(filePath: string, position: {line: number, character: number}, language: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/lsp/completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_path: filePath,
+          position,
+          language
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting code completion:', error);
+      return { completions: [] };
+    }
+  }
+
+  async getHoverInfo(filePath: string, position: {line: number, character: number}, language: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/lsp/hover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_path: filePath,
+          position,
+          language
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting hover info:', error);
+      return { hover_info: null };
+    }
+  }
+
+  // MCP Methods
+  async getMCPServers(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/mcp/servers`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting MCP servers:', error);
+      return [];
+    }
+  }
+
+  async getMCPTools(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/mcp/tools`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting MCP tools:', error);
+      return [];
+    }
+  }
+
+  async invokeMCPTool(serverId: string, toolName: string, parameters: Record<string, any>): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/mcp/invoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          server_id: serverId,
+          tool_name: toolName,
+          parameters
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error invoking MCP tool:', error);
+      throw error;
+    }
+  }
+
+  // n8n Methods
+  async getN8NWorkflows(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/n8n/workflows`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting n8n workflows:', error);
+      return [];
+    }
+  }
+
+  async executeN8NWorkflow(workflowId: string, data: Record<string, any> = {}): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/n8n/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workflow_id: workflowId,
+          data
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error executing n8n workflow:', error);
+      throw error;
+    }
+  }
+
+  // Debug Methods
+  async getDebugSessions(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/debug/sessions`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting debug sessions:', error);
+      return [];
+    }
+  }
+
+  async startDebugSession(filePath: string, language: string, config?: Record<string, any>): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/debug/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_path: filePath,
+          language,
+          config
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error starting debug session:', error);
+      throw error;
+    }
+  }
+
+  async setBreakpoint(sessionId: string, filePath: string, line: number, condition?: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/debug/breakpoint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          file_path: filePath,
+          line,
+          condition
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error setting breakpoint:', error);
+      throw error;
+    }
+  }
+
+  // Tool Discovery Methods
+  async getAvailableTools(category?: string): Promise<any[]> {
+    try {
+      const url = category ? `${API_BASE_URL}/api/tools?category=${category}` : `${API_BASE_URL}/api/tools`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting available tools:', error);
+      return [];
+    }
+  }
+
+  async invokeTool(toolId: string, capability: string, parameters: Record<string, any>): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tools/invoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tool_id: toolId,
+          capability,
+          parameters
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error invoking tool:', error);
+      throw error;
+    }
+  }
+
+  async getToolAnalytics(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tools/analytics`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting tool analytics:', error);
+      return {};
+    }
+  }
+
+  // Git Integration Methods
+  async getGitStatus(repositoryPath: string = '.'): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/git/status?repository_path=${encodeURIComponent(repositoryPath)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting git status:', error);
+      throw error;
+    }
+  }
+
+  async gitCommit(repositoryPath: string, commitMessage: string, files?: string[], useN8n: boolean = false): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/git/commit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repository_path: repositoryPath,
+          commit_message: commitMessage,
+          files,
+          use_n8n: useN8n
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error committing changes:', error);
+      throw error;
+    }
+  }
+
+  async gitPush(repositoryPath: string = '.', remote: string = 'origin', branch: string = 'main'): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/git/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repository_path: repositoryPath,
+          remote,
+          branch
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error pushing changes:', error);
+      throw error;
+    }
+  }
+
+  async gitPull(repositoryPath: string = '.', remote: string = 'origin', branch: string = 'main'): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/git/pull`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repository_path: repositoryPath,
+          remote,
+          branch
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error pulling changes:', error);
+      throw error;
+    }
+  }
+
+  // Enhanced Coordination Methods
+  async getCoordinationStatus(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/coordination/status`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting coordination status:', error);
+      return { agents: [], metrics: {} };
+    }
+  }
+
+  async submitCoordinationTask(type: string, description: string, priority: string = 'normal', dependencies?: string[], prerequisites?: Record<string, any>): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/coordination/task`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          description,
+          priority,
+          dependencies,
+          prerequisites
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error submitting coordination task:', error);
+      throw error;
+    }
+  }
+
+  // Development Methods
+  async testIntegrations(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/dev/test-integrations`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error testing integrations:', error);
+      return {};
+    }
+  }
+
   cleanup() {
     if (this.ws) {
       this.ws.close();

@@ -8,6 +8,7 @@ import ChatPanel from '@components/ChatPanel';
 import StatusBar from '@components/StatusBar';
 import AgentPanel from '@components/AgentPanel';
 import TerminalPanel from '@components/TerminalPanel';
+import { AdvancedToolsDashboard } from '@components/advanced/AdvancedToolsDashboard';
 
 const GlobalStyle = createGlobalStyle<{ theme: any }>`
   * {
@@ -83,12 +84,68 @@ const BottomPanel = styled.div<{ isOpen: boolean }>`
   border-top: 1px solid ${props => props.theme.colors.border.primary};
 `;
 
+// Advanced Tools Modal
+const AdvancedToolsModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const AdvancedToolsContent = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  height: 90%;
+  max-width: 1200px;
+  max-height: 800px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e5e5e5;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 8px;
+  border-radius: 4px;
+  
+  &:hover {
+    background-color: #f5f5f5;
+  }
+`;
+
 export default function App() {
   const { 
     theme, 
     isSidebarOpen, 
     isChatPanelOpen, 
     isTerminalOpen,
+    isAdvancedToolsOpen,
+    setIsAdvancedToolsOpen,
     conversations,
     createConversation
   } = useAppStore();
@@ -125,6 +182,21 @@ export default function App() {
 
         <AgentPanel />
       </AppContainer>
+
+      {/* Advanced Tools Modal */}
+      {isAdvancedToolsOpen && (
+        <AdvancedToolsModal>
+          <AdvancedToolsContent>
+            <ModalHeader>
+              <ModalTitle>Advanced Tools Dashboard</ModalTitle>
+              <CloseButton onClick={() => setIsAdvancedToolsOpen(false)}>×</CloseButton>
+            </ModalHeader>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <AdvancedToolsDashboard />
+            </div>
+          </AdvancedToolsContent>
+        </AdvancedToolsModal>
+      )}
     </ThemeProvider>
   );
 }

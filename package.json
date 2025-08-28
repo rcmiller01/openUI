@@ -1,0 +1,28 @@
+{
+  "name": "openui",
+  "version": "0.1.0",
+  "description": "A modern UI component library and design system",
+  "main": "index.js",
+  "scripts": {
+    "dev": "echo \"Development server not configured yet\"",
+    "build": "echo \"Build script not configured yet\"",
+    "test": "echo \"Test script not configured yet\""
+  },
+  "keywords": [
+    "ui",
+    "components",
+    "design-system",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/openUI.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/openUI/issues"
+  },
+  "homepage": "https://github.com/yourusername/openUI#readme"
+}

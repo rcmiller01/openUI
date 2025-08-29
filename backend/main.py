@@ -401,7 +401,8 @@ async def get_file_content(path: str):
             modified=datetime.fromtimestamp(stat.st_mtime),
         )
     except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="File is not a text file")
+        # Non-text file
+        raise HTTPException(status_code=400, detail="File is not a text file") from None
     except Exception as e:
         logger.error(f"Error reading file: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -436,7 +437,7 @@ async def save_file_content(operation: FileOperation):
 
     except Exception as e:
         logger.error(f"Error in file operation: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Enhanced LSP endpoints
@@ -593,7 +594,7 @@ async def start_debug_session(request: dict):
         )
     except Exception as e:
         logger.error(f"Error starting debug session: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/debug/breakpoint")
@@ -616,7 +617,7 @@ async def set_breakpoint(request: dict):
         )
     except Exception as e:
         logger.error(f"Error setting breakpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Tool Discovery endpoints
@@ -642,7 +643,7 @@ async def invoke_tool(request: dict):
         return result
     except Exception as e:
         logger.error(f"Error invoking tool: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/tools/analytics")
@@ -686,7 +687,7 @@ async def submit_coordination_task(request: dict):
         return {"task_id": task_id}
     except Exception as e:
         logger.error(f"Error submitting coordination task: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/coordination/workflow")
@@ -702,7 +703,7 @@ async def submit_coordination_workflow(request: dict):
         return {"workflow_id": workflow_id}
     except Exception as e:
         logger.error(f"Error submitting coordination workflow: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Git Integration endpoints (via MCP and n8n)
@@ -717,7 +718,7 @@ async def git_status(repository_path: str = "."):
         return result
     except Exception as e:
         logger.error(f"Error getting git status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/git/commit")
@@ -753,7 +754,7 @@ async def git_commit(request: dict):
             raise HTTPException(status_code=500, detail="No git integration available")
     except Exception as e:
         logger.error(f"Error in git commit: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/git/push")
@@ -771,7 +772,7 @@ async def git_push(request: dict):
         return result
     except Exception as e:
         logger.error(f"Error in git push: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/git/pull")
@@ -789,7 +790,7 @@ async def git_pull(request: dict):
         return result
     except Exception as e:
         logger.error(f"Error in git pull: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/git/setup-automation")
@@ -808,7 +809,7 @@ async def setup_git_automation(request: dict):
         }
     except Exception as e:
         logger.error(f"Error setting up git automation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Development and testing endpoints

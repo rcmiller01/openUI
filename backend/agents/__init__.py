@@ -486,7 +486,7 @@ class AgentManager:
 
     async def cleanup(self):
         """Cleanup running tasks"""
-        for task_id, task in self.running_tasks.items():
+        for _task_id, task in self.running_tasks.items():
             if not task.done():
                 task.cancel()
                 try:

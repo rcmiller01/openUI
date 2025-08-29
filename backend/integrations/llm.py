@@ -270,7 +270,11 @@ class LLMManager:
             raise ValueError(f"Unsupported provider: {model_info.provider}")
 
     async def _openrouter_chat_completion(
-        self, messages: list[ChatMessage], model: str, stream: bool = False, **kwargs
+        self,
+        messages: list[ChatMessage],
+        model: str,
+        stream: bool = False,
+        **kwargs: dict[str, Any],
     ) -> ChatResponse:
         """Handle OpenRouter chat completion"""
         if not self.openrouter_client:
@@ -300,7 +304,8 @@ class LLMManager:
             data = response.json()
 
             if "error" in data:
-                raise Exception(f"OpenRouter API error: {data['error']['message']}")
+                err_msg = data["error"].get("message", "unknown error")
+                raise Exception(f"OpenRouter API error: {err_msg}")
 
             choice = data["choices"][0]
             message_data = choice["message"]
@@ -322,22 +327,27 @@ class LLMManager:
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise Exception("Invalid OpenRouter API key")
+                raise Exception("Invalid OpenRouter API key") from e
             elif e.response.status_code == 429:
-                raise Exception("OpenRouter rate limit exceeded")
+                raise Exception("OpenRouter rate limit exceeded") from e
             elif e.response.status_code == 400:
                 error_data = e.response.json()
-                raise Exception(
-                    f"Invalid request: {error_data.get('error', {}).get('message', str(e))}"
-                )
+                err_obj = error_data.get("error", {})
+                invalid_msg = err_obj.get("message", str(e))
+                raise Exception(f"Invalid request: {invalid_msg}") from e
             else:
-                raise Exception(f"OpenRouter API error ({e.response.status_code}): {e}")
+                msg = f"OpenRouter API error ({e.response.status_code}): {e}"
+                raise Exception(msg) from e
         except Exception as e:
             logger.error(f"OpenRouter chat completion error: {e}")
             raise
 
     async def _ollama_chat_completion(
-        self, messages: list[ChatMessage], model: str, stream: bool = False, **kwargs
+        self,
+        messages: list[ChatMessage],
+        model: str,
+        stream: bool = False,
+        **kwargs: dict[str, Any],
     ) -> ChatResponse:
         """Handle Ollama chat completion"""
         if not self.ollama_client:

@@ -4,9 +4,7 @@ This module provides basic mathematical operations as an example
 of the Open-Deep-Coder workflow implementation.
 """
 
-from typing import Union
-
-Number = Union[int, float]
+Number = int | float
 
 
 def add(a: Number, b: Number) -> Number:

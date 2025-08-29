@@ -1,0 +1,15 @@
+config:
+  user.network_mode: "bridged"
+  limits.cpu: "2"
+  limits.memory: 2GB
+description: "Example profile for OpenUI container"
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: lxdbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    type: disk

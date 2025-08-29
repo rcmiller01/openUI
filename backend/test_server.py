@@ -340,7 +340,7 @@ async def list_files(path: str = "."):
         # correct status code is returned instead of wrapping it as 500.
         if isinstance(e, HTTPException):
             raise
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/files/content")
@@ -367,7 +367,7 @@ async def get_file_content(path: str):
         # Preserve deliberately raised HTTPExceptions
         if isinstance(e, HTTPException):
             raise
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
@@ -383,8 +383,9 @@ if __name__ == "__main__":
                 loop.create_task(httpx_client.aclose())
             else:
                 asyncio.run(httpx_client.aclose())
-        except:
-            pass
+        except Exception as e:
+            # best-effort: log and continue cleanup
+            print(f"Error closing httpx client: {e}")
 
     atexit.register(cleanup)
 

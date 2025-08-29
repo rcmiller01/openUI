@@ -4,7 +4,7 @@
  * Handles communication with the backend API and WebSocket connections.
  */
 
-import { ChatMessage, LLMModel } from '@store';
+import { ChatMessage, LLMModel } from '../store';
 
 const API_BASE_URL = 'http://localhost:8000';
 const WS_URL = 'ws://localhost:8000/ws';
@@ -703,17 +703,181 @@ class ApiClient {
     }
   }
 
-  // Development Methods
-  async testIntegrations(): Promise<any> {
+  // Container Management Methods
+  async getProxmoxNodes(): Promise<string[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/dev/test-integrations`);
+      const response = await fetch(`${API_BASE_URL}/api/containers/nodes`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.nodes || [];
+    } catch (error) {
+      console.error('Error getting Proxmox nodes:', error);
+      return [];
+    }
+  }
+
+  async getContainers(node: string): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.containers || [];
+    } catch (error) {
+      console.error('Error getting containers:', error);
+      return [];
+    }
+  }
+
+  async getVMs(node: string): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/qemu`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.vms || [];
+    } catch (error) {
+      console.error('Error getting VMs:', error);
+      return [];
+    }
+  }
+
+  async startContainer(node: string, vmid: number): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/start`, {
+        method: 'POST',
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('Error testing integrations:', error);
-      return {};
+      console.error('Error starting container:', error);
+      throw error;
+    }
+  }
+
+  async stopContainer(node: string, vmid: number): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/stop`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error stopping container:', error);
+      throw error;
+    }
+  }
+
+  async restartContainer(node: string, vmid: number): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/restart`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error restarting container:', error);
+      throw error;
+    }
+  }
+
+  async getContainerStatus(node: string, vmid: number): Promise<string> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/status`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.status;
+    } catch (error) {
+      console.error('Error getting container status:', error);
+      return 'unknown';
+    }
+  }
+
+  async listContainerFiles(node: string, vmid: number, path: string = '/'): Promise<any[]> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files?path=${encodeURIComponent(path)}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.files || [];
+    } catch (error) {
+      console.error('Error listing container files:', error);
+      return [];
+    }
+  }
+
+  async readContainerFile(node: string, vmid: number, filePath: string): Promise<string> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files/content?file_path=${encodeURIComponent(filePath)}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data.content || '';
+    } catch (error) {
+      console.error('Error reading container file:', error);
+      return '';
+    }
+  }
+
+  async writeContainerFile(node: string, vmid: number, filePath: string, content: string): Promise<any> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files/content?file_path=${encodeURIComponent(filePath)}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error writing container file:', error);
+      throw error;
+    }
+  }
+
+  async executeInContainer(node: string, vmid: number, command: string): Promise<any> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/exec`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ command }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error executing command in container:', error);
+      throw error;
     }
   }
 

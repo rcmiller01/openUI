@@ -5,6 +5,7 @@ import { LSPIntegration } from './LSPIntegration';
 import { N8NWorkflowManager } from './N8NWorkflowManager';
 import { GitIntegration } from './GitIntegration';
 import { AgentCoordination } from './AgentCoordination';
+import { ProxmoxContainerManager } from './ProxmoxContainerManager';
 
 export const AdvancedToolsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tools');
@@ -15,7 +16,8 @@ export const AdvancedToolsDashboard: React.FC = () => {
     { id: 'lsp', label: '🔧 LSP', component: <LSPIntegration /> },
     { id: 'n8n', label: '🔄 n8n', component: <N8NWorkflowManager /> },
     { id: 'git', label: '📚 Git', component: <GitIntegration /> },
-    { id: 'agents', label: '🤖 Agents', component: <AgentCoordination /> }
+    { id: 'agents', label: '🤖 Agents', component: <AgentCoordination /> },
+    { id: 'containers', label: '🐳 Containers', component: <ProxmoxContainerManager /> }
   ];
 
   return (
@@ -74,12 +76,12 @@ export const AdvancedToolsDashboard: React.FC = () => {
           </button>
           
           <button
-            onClick={() => setActiveTab('git')}
+            onClick={() => setActiveTab('containers')}
             className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
           >
-            <div className="text-2xl mb-2">📚</div>
-            <div className="font-medium text-gray-900">Git Operations</div>
-            <div className="text-sm text-gray-600 mt-1">Commit, push, and pull</div>
+            <div className="text-2xl mb-2">�</div>
+            <div className="font-medium text-gray-900">Container Manager</div>
+            <div className="text-sm text-gray-600 mt-1">Manage Proxmox containers</div>
           </button>
         </div>
       </div>

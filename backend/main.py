@@ -36,6 +36,7 @@ try:
     from backend.integrations.lsp_enhanced import LSPManager
     from backend.integrations.mcp import MCPManager
     from backend.integrations.n8n import N8NManager
+    from backend.integrations.proxmox import ProxmoxManager
     from backend.integrations.tool_discovery import ToolDiscoveryManager
 except ImportError:
     # Fallback for when running as script
@@ -56,6 +57,7 @@ except ImportError:
     from integrations.lsp_enhanced import LSPManager
     from integrations.mcp import MCPManager
     from integrations.n8n import N8NManager
+    from integrations.proxmox import ProxmoxManager
     from integrations.tool_discovery import ToolDiscoveryManager
 
 # Configure logging
@@ -68,6 +70,7 @@ llm_manager: LLMManager | None = None
 lsp_manager: LSPManager | None = None
 mcp_manager: MCPManager | None = None
 n8n_manager: N8NManager | None = None
+proxmox_manager: ProxmoxManager | None = None
 debug_manager: DebugManager | None = None
 coordinator: EnhancedAgentCoordinator | None = None
 tool_discovery: ToolDiscoveryManager | None = None
@@ -76,7 +79,8 @@ tool_discovery: ToolDiscoveryManager | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    global agent_manager, llm_manager, lsp_manager, mcp_manager, n8n_manager, debug_manager, coordinator, tool_discovery
+    global agent_manager, llm_manager, lsp_manager, mcp_manager, n8n_manager
+    global proxmox_manager, debug_manager, coordinator, tool_discovery
 
     # Startup
     logger.info("Starting Open-Deep-Coder backend with enhanced capabilities...")
@@ -89,6 +93,7 @@ async def lifespan(app: FastAPI):
     lsp_manager = LSPManager()
     mcp_manager = MCPManager()
     n8n_manager = N8NManager(n8n_url="http://192.168.50.145:5678")
+    proxmox_manager = ProxmoxManager()
     debug_manager = DebugManager()
     coordinator = EnhancedAgentCoordinator()
     tool_discovery = ToolDiscoveryManager()
@@ -99,6 +104,7 @@ async def lifespan(app: FastAPI):
     await lsp_manager.initialize()
     await mcp_manager.initialize()
     await n8n_manager.initialize()
+    await proxmox_manager.initialize()
     await debug_manager.initialize()
     await coordinator.initialize()
 
@@ -107,6 +113,7 @@ async def lifespan(app: FastAPI):
         "lsp": lsp_manager,
         "mcp": mcp_manager,
         "n8n": n8n_manager,
+        "proxmox": proxmox_manager,
         "debug": debug_manager,
     }
     await tool_discovery.initialize(integrations)
@@ -124,6 +131,8 @@ async def lifespan(app: FastAPI):
         await coordinator.cleanup()
     if debug_manager:
         await debug_manager.cleanup()
+    if proxmox_manager:
+        await proxmox_manager.cleanup()
     if n8n_manager:
         await n8n_manager.cleanup()
     if mcp_manager:
@@ -191,6 +200,7 @@ async def health_check():
             "lsp_manager": lsp_manager is not None and lsp_manager.is_initialized,
             "mcp_manager": mcp_manager is not None and mcp_manager.is_initialized,
             "n8n_manager": n8n_manager is not None and n8n_manager.is_initialized,
+            "proxmox_manager": proxmox_manager is not None and proxmox_manager.is_initialized,
             "debug_manager": debug_manager is not None and debug_manager.is_initialized,
             "coordinator": coordinator is not None and coordinator.is_initialized,
             "tool_discovery": tool_discovery is not None
@@ -910,6 +920,167 @@ async def test_integrations():
         results["coordination"] = {"status": "unavailable"}
 
     return results
+
+
+# Proxmox container management endpoints
+@app.get("/api/containers/nodes")
+async def get_proxmox_nodes() -> dict:
+    """Get list of available Proxmox nodes"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        nodes = await proxmox_manager.get_nodes()
+        return {"nodes": nodes}
+    except Exception as e:
+        logger.error(f"Error getting Proxmox nodes: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/containers/{node}/lxc")
+async def get_containers(node: str) -> dict:
+    """Get all containers on a node"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        containers = await proxmox_manager.get_containers(node)
+        return {"containers": [container.__dict__ for container in containers]}
+    except Exception as e:
+        logger.error(f"Error getting containers: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/containers/{node}/qemu")
+async def get_vms(node: str) -> dict:
+    """Get all VMs on a node"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        vms = await proxmox_manager.get_vms(node)
+        return {"vms": [vm.__dict__ for vm in vms]}
+    except Exception as e:
+        logger.error(f"Error getting VMs: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/containers/{node}/lxc/{vmid}/start")
+async def start_container(node: str, vmid: int) -> dict:
+    """Start a container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        result = await proxmox_manager.start_container(node, vmid)
+        return result
+    except Exception as e:
+        logger.error(f"Error starting container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/containers/{node}/lxc/{vmid}/stop")
+async def stop_container(node: str, vmid: int) -> dict:
+    """Stop a container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        result = await proxmox_manager.stop_container(node, vmid)
+        return result
+    except Exception as e:
+        logger.error(f"Error stopping container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/containers/{node}/lxc/{vmid}/restart")
+async def restart_container(node: str, vmid: int) -> dict:
+    """Restart a container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        result = await proxmox_manager.restart_container(node, vmid)
+        return result
+    except Exception as e:
+        logger.error(f"Error restarting container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/containers/{node}/lxc/{vmid}/status")
+async def get_container_status(node: str, vmid: int) -> dict:
+    """Get container status"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        status = await proxmox_manager.get_container_status(node, vmid)
+        return {"status": status.value}
+    except Exception as e:
+        logger.error(f"Error getting container {vmid} status: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/containers/{node}/lxc/{vmid}/files")
+async def list_container_files(node: str, vmid: int, path: str = "/") -> dict:
+    """List files in container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        files = await proxmox_manager.list_container_files(node, vmid, path)
+        return {"files": [file.__dict__ for file in files]}
+    except Exception as e:
+        logger.error(f"Error listing files in container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/containers/{node}/lxc/{vmid}/files/content")
+async def read_container_file(node: str, vmid: int, file_path: str) -> dict:
+    """Read file content from container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        content = await proxmox_manager.read_container_file(node, vmid, file_path)
+        return {"content": content}
+    except Exception as e:
+        logger.error(f"Error reading file {file_path} from container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.put("/api/containers/{node}/lxc/{vmid}/files/content")
+async def write_container_file(
+    node: str, vmid: int, file_path: str, request: dict
+) -> dict:
+    """Write file content to container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        result = await proxmox_manager.write_container_file(
+            node, vmid, file_path, request["content"]
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error writing file {file_path} to container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/containers/{node}/lxc/{vmid}/exec")
+async def execute_in_container(node: str, vmid: int, request: dict) -> dict:
+    """Execute command in container"""
+    if not proxmox_manager:
+        raise HTTPException(status_code=500, detail="Proxmox manager not initialized")
+
+    try:
+        result = await proxmox_manager.execute_in_container(
+            node, vmid, request["command"]
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error executing command in container {vmid}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Main entry point

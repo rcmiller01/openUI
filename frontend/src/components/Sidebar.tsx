@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
+import { useAppStore } from '../store';
 import FileExplorer from './FileExplorer';
 
 const SidebarContainer = styled.div`

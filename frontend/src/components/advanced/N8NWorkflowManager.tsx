@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface Workflow {
   id: string;
@@ -12,6 +12,7 @@ interface Workflow {
 
 interface ExecutionResult {
   execution_id?: string;
+  workflow_id?: string; // Add workflow_id to interface
   error?: string;
   status?: string;
 }
@@ -28,8 +29,6 @@ export const N8NWorkflowManager: React.FC = () => {
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
 
   useEffect(() => {
     loadWorkflows();
@@ -86,25 +85,16 @@ export const N8NWorkflowManager: React.FC = () => {
     const files = gitForm.files.split(',').map(f => f.trim()).filter(f => f);
     
     try {
-      const result = await apiClient.gitCommitViaN8N(
+      const result = await apiClient.gitCommit(
         gitForm.repositoryPath,
         gitForm.commitMessage,
-        files
+        files,
+        true // useN8n = true
       );
       setExecutionResults(prev => [result, ...prev.slice(0, 9)]);
     } catch (err) {
       const errorResult = { error: `Failed to trigger git commit workflow: ${err}` };
       setExecutionResults(prev => [errorResult, ...prev.slice(0, 9)]);
-    }
-  };
-
-  const setupGitAutomation = async () => {
-    try {
-      const result = await apiClient.setupGitAutomation(gitForm.repositoryPath);
-      setExecutionResults(prev => [result, ...prev.slice(0, 9)]);
-      alert(`Git automation setup: ${result.status || 'completed'}`);
-    } catch (err) {
-      alert(`Failed to setup git automation: ${err}`);
     }
   };
 
@@ -125,14 +115,6 @@ export const N8NWorkflowManager: React.FC = () => {
       case 'error': return 'text-red-600';
       case 'paused': return 'text-yellow-600';
       default: return 'text-gray-500';
-    }
-  };
-
-  const formatExecutionData = (data: string) => {
-    try {
-      return JSON.stringify(JSON.parse(data), null, 2);
-    } catch {
-      return data;
     }
   };
 
@@ -312,12 +294,6 @@ export const N8NWorkflowManager: React.FC = () => {
                     className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
                   >
                     📝 Commit via n8n
-                  </button>
-                  <button
-                    onClick={setupGitAutomation}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    ⚙️ Setup Automation
                   </button>
                 </div>
               </div>

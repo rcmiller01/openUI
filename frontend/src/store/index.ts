@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ThemeVariant, themes } from '@themes';
+import { ThemeVariant } from '../themes';
 
 // LLM Provider Types
 export type LLMProvider = 'openrouter' | 'ollama' | 'local';
@@ -101,6 +101,7 @@ export interface AppState {
   // Settings
   settings: {
     autoSave: boolean;
+    autoSaveDelay: number;
     fontSize: number;
     tabSize: number;
     wordWrap: boolean;
@@ -260,7 +261,7 @@ export const useAppStore = create<AppState>()(
       // Permissions
       permissions: {},
       
-      requestPermission: async (resource, reason) => {
+      requestPermission: async (resource) => {
         // This will show a permission dialog
         // For now, return true as a placeholder
         const granted = true; // await showPermissionDialog(resource, reason);
@@ -285,6 +286,7 @@ export const useAppStore = create<AppState>()(
       // Settings
       settings: {
         autoSave: true,
+        autoSaveDelay: 1000,
         fontSize: 14,
         tabSize: 2,
         wordWrap: true,

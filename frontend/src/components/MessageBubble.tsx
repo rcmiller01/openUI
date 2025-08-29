@@ -1,6 +1,5 @@
-import React from 'react';
 import styled from 'styled-components';
-import { ChatMessage } from '@store';
+import { ChatMessage } from '@/store';
 
 const MessageContainer = styled.div<{ isUser: boolean; isLoading?: boolean }>`
   display: flex;

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
-import { AgentType, AgentStatus as AgentStatusType } from '@store';
+import { useAppStore } from '../store';
+import { AgentType, AgentStatus as AgentStatusType } from '../store';
 
 const AgentPanelContainer = styled.div<{ isOpen: boolean }>`
   width: ${props => props.isOpen ? '300px' : '40px'};
@@ -192,7 +192,7 @@ export default function AgentPanel() {
       reviewer: '🔍',
       researcher: '🔬'
     };
-    return icons[type];
+    return icons[type as keyof typeof icons];
   };
 
   const getAgentDescription = (type: AgentType) => {
@@ -204,7 +204,7 @@ export default function AgentPanel() {
       reviewer: 'Reviews code for security',
       researcher: 'Looks up documentation'
     };
-    return descriptions[type];
+    return descriptions[type as keyof typeof descriptions];
   };
 
   const handleRunAgent = (type: AgentType) => {

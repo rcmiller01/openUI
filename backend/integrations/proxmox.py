@@ -71,7 +71,7 @@ class ProxmoxManager:
     """Manager for Proxmox VE operations"""
 
     def __init__(self, host: str = "localhost", port: int = 8006,
-                 username: str = "root@pam", password: str = None):
+                 username: str = "root@pam", password: Optional[str] = None):
         self.host = host
         self.port = port
         self.username = username

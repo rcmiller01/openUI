@@ -1,6 +1,5 @@
-import React from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
+import { useAppStore } from '@/store';
 
 const StatusBarContainer = styled.div`
   height: 24px;

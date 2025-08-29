@@ -13,6 +13,10 @@ from contextlib import asynccontextmanager
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,8 +96,15 @@ async def lifespan(app: FastAPI):
     # Initialize enhanced integration managers
     lsp_manager = LSPManager()
     mcp_manager = MCPManager()
-    n8n_manager = N8NManager(n8n_url="http://192.168.50.145:5678")
-    proxmox_manager = ProxmoxManager()
+    n8n_manager = N8NManager(
+        n8n_url=os.getenv("N8N_URL", "http://localhost:5678")
+    )
+    proxmox_manager = ProxmoxManager(
+        host=os.getenv("PROXMOX_HOST", "localhost"),
+        port=int(os.getenv("PROXMOX_PORT", "8006")),
+        username=os.getenv("PROXMOX_USERNAME", "root@pam"),
+        password=os.getenv("PROXMOX_PASSWORD", "")
+    )
     debug_manager = DebugManager()
     coordinator = EnhancedAgentCoordinator()
     tool_discovery = ToolDiscoveryManager()
@@ -125,8 +136,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down Open-Deep-Coder backend...")
 
-    if tool_discovery:
-        await tool_discovery.cleanup()
     if coordinator:
         await coordinator.cleanup()
     if debug_manager:
@@ -447,7 +456,7 @@ async def save_file_content(operation: FileOperation):
 
     except Exception as e:
         logger.error(f"Error in file operation: {e}")
-    raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Enhanced LSP endpoints

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface DebugSession {
   id: string;
@@ -51,8 +51,6 @@ export const DebugPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
-
   useEffect(() => {
     loadSessions();
   }, []);
@@ -81,12 +79,14 @@ export const DebugPanel: React.FC = () => {
     
     try {
       // Load variables and stack trace for the selected session
-      const [variablesData, stackData] = await Promise.all([
-        apiClient.getVariables(selectedSession),
-        apiClient.getStackTrace(selectedSession)
-      ]);
-      setVariables(variablesData);
-      setStackFrames(stackData);
+      // TODO: Implement these methods in the API
+      // const [variablesData, stackData] = await Promise.all([
+      //   apiClient.getVariables(selectedSession),
+      //   apiClient.getStackTrace(selectedSession)
+      // ]);
+      // setVariables(variablesData);
+      // setStackFrames(stackData);
+      console.log('Session details loading not implemented yet');
     } catch (err) {
       console.error('Failed to load session details:', err);
     }
@@ -115,7 +115,9 @@ export const DebugPanel: React.FC = () => {
 
   const stopDebugSession = async (sessionId: string) => {
     try {
-      await apiClient.stopDebugSession(sessionId);
+      // TODO: Implement stopDebugSession method in API
+      console.log('Stop debug session not implemented yet:', sessionId);
+      // await apiClient.stopDebugSession(sessionId);
       if (selectedSession === sessionId) {
         setSelectedSession(null);
         setVariables([]);
@@ -152,7 +154,9 @@ export const DebugPanel: React.FC = () => {
   const continueExecution = async () => {
     if (!selectedSession) return;
     try {
-      await apiClient.continueExecution(selectedSession);
+      // TODO: Implement continueExecution method in API
+      console.log('Continue execution not implemented yet:', selectedSession);
+      // await apiClient.continueExecution(selectedSession);
       loadSessionDetails();
     } catch (err) {
       alert(`Failed to continue execution: ${err}`);
@@ -162,7 +166,9 @@ export const DebugPanel: React.FC = () => {
   const stepOver = async () => {
     if (!selectedSession) return;
     try {
-      await apiClient.stepOver(selectedSession);
+      // TODO: Implement stepOver method in API
+      console.log('Step over not implemented yet:', selectedSession);
+      // await apiClient.stepOver(selectedSession);
       loadSessionDetails();
     } catch (err) {
       alert(`Failed to step over: ${err}`);
@@ -172,7 +178,9 @@ export const DebugPanel: React.FC = () => {
   const stepInto = async () => {
     if (!selectedSession) return;
     try {
-      await apiClient.stepInto(selectedSession);
+      // TODO: Implement stepInto method in API
+      console.log('Step into not implemented yet:', selectedSession);
+      // await apiClient.stepInto(selectedSession);
       loadSessionDetails();
     } catch (err) {
       alert(`Failed to step into: ${err}`);
@@ -182,7 +190,9 @@ export const DebugPanel: React.FC = () => {
   const stepOut = async () => {
     if (!selectedSession) return;
     try {
-      await apiClient.stepOut(selectedSession);
+      // TODO: Implement stepOut method in API
+      console.log('Step out not implemented yet:', selectedSession);
+      // await apiClient.stepOut(selectedSession);
       loadSessionDetails();
     } catch (err) {
       alert(`Failed to step out: ${err}`);
@@ -191,10 +201,13 @@ export const DebugPanel: React.FC = () => {
 
   const evaluateExpressionInDebugger = async () => {
     if (!selectedSession || !evaluateExpression) return;
-    
+
     try {
-      const result = await apiClient.evaluateExpression(selectedSession, evaluateExpression);
-      setEvaluationResult(result);
+      // TODO: Implement evaluateExpression method in API
+      console.log('Evaluate expression not implemented yet:', selectedSession, evaluateExpression);
+      // const result = await apiClient.evaluateExpression(selectedSession, evaluateExpression);
+      // setEvaluationResult(result);
+      setEvaluationResult({ message: 'Expression evaluation not implemented yet' });
     } catch (err) {
       alert(`Failed to evaluate expression: ${err}`);
     }

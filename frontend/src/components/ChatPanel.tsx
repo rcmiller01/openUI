@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
-import { ChatMessage } from '@store';
+import { useAppStore } from '../store';
+import { ChatMessage } from '../store';
 import MessageBubble from './MessageBubble';
 import ModelSelector from './ModelSelector';
 import AgentStatusIndicator from './AgentStatusIndicator';
@@ -129,7 +129,6 @@ export default function ChatPanel() {
     conversations,
     activeConversationId,
     selectedModel,
-    availableModels,
     toggleChatPanel,
     addMessage,
     createConversation,
@@ -184,7 +183,12 @@ export default function ChatPanel() {
     try {
       // Call backend API for LLM response
       const response = await apiClient.chatCompletion({
-        messages: [...(activeConversation?.messages || []), userMessage],
+        messages: [...(activeConversation?.messages || []), {
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          role: userMessage.role,
+          content: userMessage.content
+        }],
         model: selectedModel || undefined,
         context: {
           conversation_id: activeConversationId

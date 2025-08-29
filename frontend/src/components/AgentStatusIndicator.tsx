@@ -1,6 +1,5 @@
-import React from 'react';
 import styled from 'styled-components';
-import { useAppStore, Agent } from '@store';
+import { useAppStore, Agent } from '@/store';
 
 const StatusContainer = styled.div`
   padding: 12px 16px;

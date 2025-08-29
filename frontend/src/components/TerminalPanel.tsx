@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
+import { useAppStore } from '@/store';
 
 const TerminalContainer = styled.div`
   height: 100%;

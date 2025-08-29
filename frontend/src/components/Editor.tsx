@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import * as monaco from 'monaco-editor';
-import { useAppStore } from '@store';
+import { useAppStore } from '../store';
 import apiClient from '../services/api';
 
 const EditorContainer = styled.div`
@@ -156,7 +156,7 @@ export default function Editor() {
       scrollBeyondLastLine: false,
       renderWhitespace: 'selection',
       cursorBlinking: 'smooth',
-      cursorSmoothCaretAnimation: true,
+      cursorSmoothCaretAnimation: 'on',
       smoothScrolling: true,
     });
 

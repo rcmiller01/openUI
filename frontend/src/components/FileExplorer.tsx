@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
+import { useAppStore } from '@/store';
 import apiClient, { FileInfo } from '../services/api';
 
 const ExplorerContainer = styled.div`
@@ -103,7 +103,7 @@ const ErrorState = styled.div`
 `;
 
 export default function FileExplorer() {
-  const { openFile, activeFile, openFiles } = useAppStore();
+  const { openFile, openFiles } = useAppStore();
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [currentPath, setCurrentPath] = useState('.');
   const [loading, setLoading] = useState(false);
@@ -174,10 +174,6 @@ export default function FileExplorer() {
       default:
         return '📄';
     }
-  };
-
-  const formatPath = (path: string) => {
-    return path === '.' ? 'Root' : path.replace(/\\\\/g, '/');
   };
 
   const pathParts = currentPath.split(/[\\\\/]/).filter(Boolean);

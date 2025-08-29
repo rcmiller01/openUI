@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
-import { useAppStore } from '@store';
-import { themes } from '@themes';
-import Sidebar from '@components/Sidebar';
-import Editor from '@components/Editor';
-import ChatPanel from '@components/ChatPanel';
-import StatusBar from '@components/StatusBar';
-import AgentPanel from '@components/AgentPanel';
-import TerminalPanel from '@components/TerminalPanel';
-import { AdvancedToolsDashboard } from '@components/advanced/AdvancedToolsDashboard';
+import { useAppStore } from './store';
+import { themes } from './themes';
+import Sidebar from './components/Sidebar';
+import Editor from './components/Editor';
+import ChatPanel from './components/ChatPanel';
+import StatusBar from './components/StatusBar';
+import AgentPanel from './components/AgentPanel';
+import TerminalPanel from './components/TerminalPanel';
+import { AdvancedToolsDashboard } from './components/advanced/AdvancedToolsDashboard';
 
-const GlobalStyle = createGlobalStyle<{ theme: any }>`
+const GlobalStyle = createGlobalStyle`
   * {
     margin: 0;
     padding: 0;
@@ -150,7 +150,7 @@ export default function App() {
     createConversation
   } = useAppStore();
 
-  const currentTheme = themes[theme];
+  const currentTheme = themes[theme as keyof typeof themes];
 
   // Initialize default conversation if none exists
   useEffect(() => {

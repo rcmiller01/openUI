@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface Agent {
   id: string;
-  name: string;
+  type: string;
   status: string;
+  name: string;
+  currentTask?: string;
+  progress?: number;
+  lastResult?: any;
+  error?: string;
   capabilities: string[];
-  current_task?: string;
   performance_score: number;
   load: number;
 }
@@ -35,18 +39,9 @@ interface SystemMetrics {
   agent_utilization: number;
 }
 
-interface Workflow {
-  id: string;
-  name: string;
-  status: string;
-  tasks: Task[];
-  progress: number;
-}
-
 export const AgentCoordination: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [newTaskForm, setNewTaskForm] = useState({
     type: 'analysis',
@@ -60,8 +55,6 @@ export const AgentCoordination: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
 
   useEffect(() => {
     loadCoordinationStatus();
@@ -142,32 +135,23 @@ export const AgentCoordination: React.FC = () => {
     try {
       const tasks = newWorkflowForm.tasks.split('\n').map(task => task.trim()).filter(task => task);
       
-      const result = await apiClient.submitCoordinationWorkflow(
-        newWorkflowForm.name,
-        tasks.map((task, index) => ({
-          id: `task_${index}`,
-          description: task,
-          type: 'general'
-        }))
+      // Submit each task individually
+      const results = await Promise.all(
+        tasks.map((task) => 
+          apiClient.submitCoordinationTask(
+            'general',
+            task,
+            'normal',
+            [],
+            { workflow_name: newWorkflowForm.name }
+          )
+        )
       );
+      
+      const result = results[0]; // Use first result for now
 
       if (result.workflow_id) {
-        // Add to local workflows list
-        const newWorkflow: Workflow = {
-          id: result.workflow_id,
-          name: newWorkflowForm.name,
-          status: 'pending',
-          tasks: tasks.map((task, index) => ({
-            id: `task_${index}`,
-            type: 'general',
-            description: task,
-            status: 'pending',
-            priority: 'normal',
-            created_at: new Date().toISOString()
-          })),
-          progress: 0
-        };
-        setWorkflows(prev => [newWorkflow, ...prev]);
+        // Workflow submitted successfully
         
         // Clear form
         setNewWorkflowForm({ name: '', tasks: '' });
@@ -320,11 +304,11 @@ export const AgentCoordination: React.FC = () => {
                 </div>
 
                 {/* Current Task */}
-                {agent.current_task && (
+                {agent.currentTask && (
                   <div className="mb-3">
                     <div className="text-sm text-gray-600">Current Task:</div>
                     <div className="text-sm font-mono bg-gray-100 p-2 rounded">
-                      {agent.current_task}
+                      {agent.currentTask}
                     </div>
                   </div>
                 )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface GitStatus {
   branch?: string;
@@ -34,8 +34,6 @@ export const GitIntegration: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
-
   useEffect(() => {
     loadGitStatus();
   }, [repositoryPath]);
@@ -44,7 +42,7 @@ export const GitIntegration: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const status = await apiClient.gitStatus(repositoryPath);
+      const status = await apiClient.getGitStatus(repositoryPath);
       setGitStatus(status);
     } catch (err) {
       setError(`Failed to load git status: ${err}`);

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@store';
+import { useAppStore } from '@/store';
 
 const SelectorContainer = styled.div`
   display: flex;
@@ -145,7 +145,7 @@ export default function ModelSelector() {
           <ProviderBadge provider={selectedModelInfo.provider}>
             {selectedModelInfo.provider}
           </ProviderBadge>
-          <span>{selectedModelInfo.context_length.toLocaleString()} ctx</span>
+          <span>{selectedModelInfo.contextLength.toLocaleString()} ctx</span>
         </ModelInfo>
       )}
     </SelectorContainer>

@@ -51,6 +51,7 @@ export interface ThemeColors {
 export interface Theme {
   name: string;
   variant: 'light-low' | 'light-high' | 'dark-low' | 'dark-high';
+  sidebarWidth?: number;
   colors: ThemeColors;
 }
 

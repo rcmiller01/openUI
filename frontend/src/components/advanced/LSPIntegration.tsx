@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface LSPServer {
   id: string;
@@ -31,8 +31,6 @@ export const LSPIntegration: React.FC = () => {
   const [hoverInfo, setHoverInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
 
   useEffect(() => {
     loadServers();

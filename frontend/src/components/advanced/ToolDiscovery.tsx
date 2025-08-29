@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ApiClient } from '../../services/api';
+import { apiClient } from '../../services/api';
 
 interface Tool {
   id: string;
@@ -28,8 +28,6 @@ export const ToolDiscovery: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const apiClient = new ApiClient('http://127.0.0.1:8000');
 
   useEffect(() => {
     loadTools();

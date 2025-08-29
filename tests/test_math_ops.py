@@ -1,6 +1,7 @@
 """Tests for math_ops module."""
 
 import pytest
+
 from src.math_ops import (
     add,
     divide,
@@ -142,7 +143,7 @@ class TestPower:
     def test_power_fractional_exponent(self):
         """Test raising to fractional powers."""
         assert power(4, 0.5) == 2.0
-        assert power(8, 1/3) == pytest.approx(2.0)
+        assert power(8, 1 / 3) == pytest.approx(2.0)
 
     def test_power_zero_base(self):
         """Test raising zero to powers."""

@@ -10,11 +10,12 @@ import json
 import logging
 import os
 import subprocess
-from typing import Dict, List, Optional, Any, AsyncGenerator
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 class LSPServerState(str, Enum):
     STOPPED = "stopped"
@@ -22,6 +23,7 @@ class LSPServerState(str, Enum):
     RUNNING = "running"
     ERROR = "error"
     RESTARTING = "restarting"
+
 
 @dataclass
 class LSPCapabilities:
@@ -44,30 +46,32 @@ class LSPCapabilities:
     diagnostic: bool = False
     debug_support: bool = False
 
+
 @dataclass
 class LSPServer:
     id: str
     name: str
     language: str
-    command: List[str]
-    args: List[str]
+    command: list[str]
+    args: list[str]
     working_directory: str
     state: LSPServerState
     capabilities: LSPCapabilities
-    process: Optional[subprocess.Popen] = None
-    stdin_queue: Optional[asyncio.Queue] = None
-    stdout_queue: Optional[asyncio.Queue] = None
-    
+    process: subprocess.Popen | None = None
+    stdin_queue: asyncio.Queue | None = None
+    stdout_queue: asyncio.Queue | None = None
+
+
 class LSPManager:
     """Enhanced LSP Manager with real language server support"""
-    
+
     def __init__(self):
-        self.servers: Dict[str, LSPServer] = {}
-        self.language_mappings: Dict[str, str] = {}
+        self.servers: dict[str, LSPServer] = {}
+        self.language_mappings: dict[str, str] = {}
         self.is_initialized = False
         self._next_request_id = 1
-        self._pending_requests: Dict[int, asyncio.Future] = {}
-        
+        self._pending_requests: dict[int, asyncio.Future] = {}
+
         # Language server configurations
         self._server_configs = {
             "python": {
@@ -82,8 +86,8 @@ class LSPManager:
                     diagnostic=True,
                     code_action=True,
                     document_formatting=True,
-                    debug_support=True
-                )
+                    debug_support=True,
+                ),
             },
             "typescript": {
                 "name": "TypeScript Language Server",
@@ -97,8 +101,8 @@ class LSPManager:
                     diagnostic=True,
                     code_action=True,
                     document_formatting=True,
-                    debug_support=True
-                )
+                    debug_support=True,
+                ),
             },
             "javascript": {
                 "name": "TypeScript Language Server",
@@ -109,8 +113,8 @@ class LSPManager:
                     hover=True,
                     definition=True,
                     references=True,
-                    diagnostic=True
-                )
+                    diagnostic=True,
+                ),
             },
             "rust": {
                 "name": "Rust Analyzer",
@@ -124,39 +128,42 @@ class LSPManager:
                     diagnostic=True,
                     code_action=True,
                     document_formatting=True,
-                    debug_support=True
-                )
-            }
+                    debug_support=True,
+                ),
+            },
         }
-    
+
     async def initialize(self):
         """Initialize LSP manager and discover available language servers"""
         logger.info("Initializing Enhanced LSP Manager...")
-        
+
         # Detect available language servers
         await self._detect_available_servers()
-        
+
         self.is_initialized = True
-        logger.info(f"LSP Manager initialized with {len(self.servers)} server configurations")
-    
+        logger.info(
+            f"LSP Manager initialized with {len(self.servers)} server configurations"
+        )
+
     async def cleanup(self):
         """Cleanup all LSP server connections"""
         for server_id in list(self.servers.keys()):
             await self.stop_server(server_id)
         self.servers.clear()
-    
+
     async def _detect_available_servers(self):
         """Detect which language servers are available on the system"""
         for language, config in self._server_configs.items():
             try:
                 # Test if the command is available
                 result = await asyncio.create_subprocess_exec(
-                    config["command"][0], "--version",
+                    config["command"][0],
+                    "--version",
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
                 )
                 await result.communicate()
-                
+
                 if result.returncode == 0:
                     logger.info(f"Found {config['name']} for {language}")
                     # Server is available, add to configurations
@@ -169,91 +176,93 @@ class LSPManager:
                         args=[],
                         working_directory=os.getcwd(),
                         state=LSPServerState.STOPPED,
-                        capabilities=config["capabilities"]
+                        capabilities=config["capabilities"],
                     )
                     self.language_mappings[language] = server_id
-                    
+
             except Exception as e:
                 logger.debug(f"Language server {config['name']} not available: {e}")
-    
-    async def start_server(self, language: str, workspace_path: str) -> Optional[str]:
+
+    async def start_server(self, language: str, workspace_path: str) -> str | None:
         """Start an LSP server for a specific language"""
         server_id = self.language_mappings.get(language)
         if not server_id or server_id not in self.servers:
             logger.warning(f"No LSP server available for language: {language}")
             return None
-        
+
         server = self.servers[server_id]
         if server.state == LSPServerState.RUNNING:
             return server_id
-        
+
         try:
             server.state = LSPServerState.STARTING
             logger.info(f"Starting LSP server {server.name} for {language}")
-            
+
             # Start the language server process
             server.process = await asyncio.create_subprocess_exec(
                 *server.command,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=workspace_path
+                cwd=workspace_path,
             )
-            
+
             # Initialize communication queues
             server.stdin_queue = asyncio.Queue()
             server.stdout_queue = asyncio.Queue()
-            
+
             # Start communication tasks
             asyncio.create_task(self._handle_server_stdout(server))
             asyncio.create_task(self._handle_server_stdin(server))
-            
+
             # Send initialize request
             await self._send_initialize_request(server, workspace_path)
-            
+
             server.state = LSPServerState.RUNNING
             logger.info(f"LSP server {server.name} started successfully")
             return server_id
-            
+
         except Exception as e:
             logger.error(f"Failed to start LSP server {server.name}: {e}")
             server.state = LSPServerState.ERROR
             return None
-    
+
     async def stop_server(self, server_id: str):
         """Stop a specific LSP server"""
         if server_id not in self.servers:
             return
-        
+
         server = self.servers[server_id]
         if server.process:
             try:
                 # Send shutdown request
                 await self._send_shutdown_request(server)
-                
+
                 # Terminate process
                 server.process.terminate()
                 await server.process.wait()
-                
+
             except Exception as e:
                 logger.error(f"Error stopping LSP server {server.name}: {e}")
             finally:
                 server.process = None
                 server.state = LSPServerState.STOPPED
-    
-    async def get_completions(self, file_path: str, position: Dict[str, int], language: str) -> List[Dict[str, Any]]:
+
+    async def get_completions(
+        self, file_path: str, position: dict[str, int], language: str
+    ) -> list[dict[str, Any]]:
         """Get code completions at a specific position"""
         server_id = self.language_mappings.get(language)
         if not server_id or server_id not in self.servers:
             return []
-        
+
         server = self.servers[server_id]
         if server.state != LSPServerState.RUNNING:
             # Try to start the server
             await self.start_server(language, os.path.dirname(file_path))
             if server.state != LSPServerState.RUNNING:
                 return []
-        
+
         try:
             # Send completion request
             request_id = self._get_next_request_id()
@@ -263,41 +272,43 @@ class LSPManager:
                 "method": "textDocument/completion",
                 "params": {
                     "textDocument": {"uri": f"file://{file_path}"},
-                    "position": position
-                }
+                    "position": position,
+                },
             }
-            
+
             # Create future for response
             future = asyncio.Future()
             self._pending_requests[request_id] = future
-            
+
             # Send request
             await self._send_request(server, request)
-            
+
             # Wait for response (with timeout)
             try:
                 response = await asyncio.wait_for(future, timeout=5.0)
                 return response.get("result", {}).get("items", [])
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(f"Completion request timed out for {file_path}")
                 return []
             finally:
                 self._pending_requests.pop(request_id, None)
-                
+
         except Exception as e:
             logger.error(f"Error getting completions: {e}")
             return []
-    
-    async def get_hover_info(self, file_path: str, position: Dict[str, int], language: str) -> Optional[str]:
+
+    async def get_hover_info(
+        self, file_path: str, position: dict[str, int], language: str
+    ) -> str | None:
         """Get hover information at a specific position"""
         server_id = self.language_mappings.get(language)
         if not server_id or server_id not in self.servers:
             return None
-        
+
         server = self.servers[server_id]
         if server.state != LSPServerState.RUNNING:
             return None
-        
+
         try:
             request_id = self._get_next_request_id()
             request = {
@@ -306,45 +317,47 @@ class LSPManager:
                 "method": "textDocument/hover",
                 "params": {
                     "textDocument": {"uri": f"file://{file_path}"},
-                    "position": position
-                }
+                    "position": position,
+                },
             }
-            
+
             future = asyncio.Future()
             self._pending_requests[request_id] = future
-            
+
             await self._send_request(server, request)
-            
+
             try:
                 response = await asyncio.wait_for(future, timeout=3.0)
                 hover_data = response.get("result", {})
                 if hover_data and "contents" in hover_data:
                     return hover_data["contents"]
                 return None
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return None
             finally:
                 self._pending_requests.pop(request_id, None)
-                
+
         except Exception as e:
             logger.error(f"Error getting hover info: {e}")
             return None
-    
-    async def get_diagnostics(self, file_path: str, language: str) -> List[Dict[str, Any]]:
+
+    async def get_diagnostics(
+        self, file_path: str, language: str
+    ) -> list[dict[str, Any]]:
         """Get diagnostic information for a file"""
         server_id = self.language_mappings.get(language)
         if not server_id or server_id not in self.servers:
             return []
-        
+
         server = self.servers[server_id]
         if server.state != LSPServerState.RUNNING:
             return []
-        
+
         # Diagnostics are typically pushed by the server, not requested
         # This is a placeholder for the diagnostic interface
         return []
-    
-    def get_server_status(self) -> List[Dict[str, Any]]:
+
+    def get_server_status(self) -> list[dict[str, Any]]:
         """Get status of all LSP servers"""
         return [
             {
@@ -356,24 +369,24 @@ class LSPManager:
                     "completion": server.capabilities.completion,
                     "hover": server.capabilities.hover,
                     "diagnostics": server.capabilities.diagnostic,
-                    "debug_support": server.capabilities.debug_support
-                }
+                    "debug_support": server.capabilities.debug_support,
+                },
             }
             for server in self.servers.values()
         ]
-    
+
     # Internal helper methods
-    
+
     def _get_next_request_id(self) -> int:
         request_id = self._next_request_id
         self._next_request_id += 1
         return request_id
-    
-    async def _send_request(self, server: LSPServer, request: Dict[str, Any]):
+
+    async def _send_request(self, server: LSPServer, request: dict[str, Any]):
         """Send a request to the LSP server"""
         if server.stdin_queue:
             await server.stdin_queue.put(request)
-    
+
     async def _send_initialize_request(self, server: LSPServer, workspace_path: str):
         """Send initialization request to LSP server"""
         request_id = self._get_next_request_id()
@@ -398,37 +411,33 @@ class LSPManager:
                         "formatting": {"dynamicRegistration": False},
                         "rangeFormatting": {"dynamicRegistration": False},
                         "rename": {"dynamicRegistration": False},
-                        "publishDiagnostics": {"relatedInformation": True}
+                        "publishDiagnostics": {"relatedInformation": True},
                     },
                     "workspace": {
                         "workspaceEdit": {"documentChanges": True},
                         "didChangeConfiguration": {"dynamicRegistration": False},
                         "didChangeWatchedFiles": {"dynamicRegistration": False},
                         "symbol": {"dynamicRegistration": False},
-                        "executeCommand": {"dynamicRegistration": False}
-                    }
-                }
-            }
+                        "executeCommand": {"dynamicRegistration": False},
+                    },
+                },
+            },
         }
-        
+
         future = asyncio.Future()
         self._pending_requests[request_id] = future
         await self._send_request(server, request)
-        
+
         try:
             await asyncio.wait_for(future, timeout=10.0)
             # Send initialized notification
-            notification = {
-                "jsonrpc": "2.0",
-                "method": "initialized",
-                "params": {}
-            }
+            notification = {"jsonrpc": "2.0", "method": "initialized", "params": {}}
             await self._send_request(server, notification)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"Initialize request timed out for {server.name}")
         finally:
             self._pending_requests.pop(request_id, None)
-    
+
     async def _send_shutdown_request(self, server: LSPServer):
         """Send shutdown request to LSP server"""
         request_id = self._get_next_request_id()
@@ -436,94 +445,92 @@ class LSPManager:
             "jsonrpc": "2.0",
             "id": request_id,
             "method": "shutdown",
-            "params": None
+            "params": None,
         }
-        
+
         future = asyncio.Future()
         self._pending_requests[request_id] = future
         await self._send_request(server, request)
-        
+
         try:
             await asyncio.wait_for(future, timeout=5.0)
             # Send exit notification
-            notification = {
-                "jsonrpc": "2.0",
-                "method": "exit",
-                "params": None
-            }
+            notification = {"jsonrpc": "2.0", "method": "exit", "params": None}
             await self._send_request(server, notification)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Shutdown request timed out for {server.name}")
         finally:
             self._pending_requests.pop(request_id, None)
-    
+
     async def _handle_server_stdout(self, server: LSPServer):
         """Handle stdout from LSP server"""
         if not server.process or not server.process.stdout:
             return
-        
+
         buffer = ""
         try:
             while True:
                 data = await server.process.stdout.read(1024)
                 if not data:
                     break
-                
-                buffer += data.decode('utf-8')
-                
+
+                buffer += data.decode("utf-8")
+
                 # Process complete messages
-                while '\r\n\r\n' in buffer:
-                    header_end = buffer.index('\r\n\r\n')
+                while "\r\n\r\n" in buffer:
+                    header_end = buffer.index("\r\n\r\n")
                     header = buffer[:header_end]
-                    buffer = buffer[header_end + 4:]
-                    
+                    buffer = buffer[header_end + 4 :]
+
                     # Parse content length
                     content_length = 0
-                    for line in header.split('\r\n'):
-                        if line.startswith('Content-Length:'):
-                            content_length = int(line.split(':')[1].strip())
+                    for line in header.split("\r\n"):
+                        if line.startswith("Content-Length:"):
+                            content_length = int(line.split(":")[1].strip())
                             break
-                    
+
                     if content_length > 0:
                         # Wait for complete message
                         while len(buffer) < content_length:
                             more_data = await server.process.stdout.read(1024)
                             if not more_data:
                                 return
-                            buffer += more_data.decode('utf-8')
-                        
+                            buffer += more_data.decode("utf-8")
+
                         # Extract message
                         message_content = buffer[:content_length]
                         buffer = buffer[content_length:]
-                        
+
                         # Parse and handle message
                         try:
                             message = json.loads(message_content)
                             await self._handle_server_message(message)
                         except json.JSONDecodeError as e:
                             logger.error(f"Failed to parse LSP message: {e}")
-                        
+
         except Exception as e:
             logger.error(f"Error handling server stdout: {e}")
-    
+
     async def _handle_server_stdin(self, server: LSPServer):
         """Handle stdin to LSP server"""
         if not server.process or not server.process.stdin or not server.stdin_queue:
             return
-        
+
         try:
             while True:
                 request = await server.stdin_queue.get()
                 message_content = json.dumps(request)
-                message = f"Content-Length: {len(message_content)}\r\n\r\n{message_content}"
-                
-                server.process.stdin.write(message.encode('utf-8'))
+                message = (
+                    f"Content-Length: {len(message_content)}\r\n\r\n{message_content}"
+                )
+
+                server.process.stdin.write(message.encode("utf-8"))
                 await server.process.stdin.drain()
-                
+
         except Exception as e:
             logger.error(f"Error handling server stdin: {e}")
-    
-    async def _handle_server_message(self, message: Dict[str, Any]):
+
+    async def _handle_server_message(self, message: dict[str, Any]):
         """Handle incoming message from LSP server"""
         if "id" in message and message["id"] in self._pending_requests:
             # Response to a request
@@ -542,12 +549,12 @@ class LSPManager:
                 logger.info(f"LSP Log: {params.get('message', '')}")
         else:
             logger.debug(f"Unhandled LSP message: {message}")
-    
-    async def _handle_diagnostics(self, params: Dict[str, Any]):
+
+    async def _handle_diagnostics(self, params: dict[str, Any]):
         """Handle diagnostic notifications from LSP server"""
         uri = params.get("uri", "")
         diagnostics = params.get("diagnostics", [])
-        
+
         # Store diagnostics for the file
         # This could be expanded to notify the frontend
         logger.debug(f"Received {len(diagnostics)} diagnostics for {uri}")

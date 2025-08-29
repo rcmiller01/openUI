@@ -1,17 +1,15 @@
-import pytest
-from httpx import AsyncClient, ASGITransport
-
-import os
 import importlib.util
+import os
 from importlib.machinery import SourceFileLoader
+
+import pytest
+from httpx import ASGITransport, AsyncClient
 
 # Load backend/test_server.py by file path so tests can import it regardless
 # of PYTHONPATH. Use runtime checks so mypy/linters don't complain about
 # optional types returned by importlib.
 here = os.path.dirname(__file__)
-server_path = os.path.abspath(
-    os.path.join(here, '..', 'backend', 'test_server.py')
-)
+server_path = os.path.abspath(os.path.join(here, "..", "backend", "test_server.py"))
 spec = importlib.util.spec_from_loader(
     "test_server", SourceFileLoader("test_server", server_path)
 )
@@ -36,4 +34,3 @@ async def test_models_returns_list():
         r = await client.get("/api/models")
         assert r.status_code == 200
         assert isinstance(r.json(), list)
-

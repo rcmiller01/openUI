@@ -7,7 +7,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+  python-version: ["3.11", "3.12", "3.13"]
     
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
         run: mypy src
       
       - name: Run tests
-        run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov-report=xml
+        run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov=backend --cov-report=xml
       
       - name: Run security checks
         run: |

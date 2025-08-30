@@ -1,0 +1,8 @@
+[Unit]
+Description=Open-Deep-Coder healthcheck
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/open-deep-coder/deploy/healthcheck.sh open-deep-coder -m /opt/open-deep-coder/docker-compose.yml

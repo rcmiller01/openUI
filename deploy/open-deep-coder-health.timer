@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Open-Deep-Coder healthcheck every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=open-deep-coder-health.service
+
+[Install]
+WantedBy=timers.target

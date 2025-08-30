@@ -5,4 +5,5 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/opt/open-deep-coder/deploy/healthcheck.sh open-deep-coder -m /opt/open-deep-coder/docker-compose.yml
+# Call healthcheck with: <container-name> <compose-file>
+ExecStart=/opt/open-deep-coder/deploy/healthcheck.sh open-deep-coder /opt/open-deep-coder/docker-compose.yml

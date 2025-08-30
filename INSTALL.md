@@ -60,3 +60,35 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000
 Notes
 - `.env` is gitignored and will not be published. Use `.env.example` as a template.
 - If you want the image with test deps (CI style), build with `--build-arg TEST_DEPS=1`.
+
+Systemd & healthcheck
+---------------------
+If you're deploying to a Linux host with systemd, follow these steps (assumes files are in `/opt/open-deep-coder`):
+
+```bash
+# copy files to system locations
+sudo cp deploy/open-deep-coder.service /etc/systemd/system/
+sudo mkdir -p /etc/systemd/system/open-deep-coder.service.d
+sudo cp deploy/open-deep-coder.service.d/override.conf /etc/systemd/system/open-deep-coder.service.d/
+sudo cp deploy/docker-compose.yml /opt/open-deep-coder/docker-compose.yml
+sudo cp deploy/docker-compose.override.yml /opt/open-deep-coder/docker-compose.override.yml
+sudo cp .env /opt/open-deep-coder/.env
+sudo cp -r deploy /opt/open-deep-coder/deploy
+sudo chmod +x /opt/open-deep-coder/deploy/healthcheck.sh
+
+# start service and timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now open-deep-coder.service
+sudo systemctl enable --now open-deep-coder-health.timer
+```
+
+Alerts (webhook)
+----------------
+The healthcheck script supports sending a POST to a webhook when health fails persistently. Configure your webhook URL in your monitoring system and pass it to the healthcheck via a wrapper or systemd environment file. The payload is a small JSON object:
+
+```json
+{"host":"<hostname>","status":"unhealthy","service":"open-deep-coder"}
+```
+
+You can use Slack Incoming Webhooks, PagerDuty, or any HTTP endpoint that accepts JSON. For Slack, set up an incoming webhook and use a small relay that converts this JSON to Slack blocks.
+

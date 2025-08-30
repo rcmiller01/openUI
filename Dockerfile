@@ -17,9 +17,10 @@ ARG TEST_DEPS=0
 # Copy package metadata and install package from pyproject.toml
 # This makes the project the single source of truth for dependencies.
 COPY pyproject.toml README.md ./
-RUN pip install --no-cache-dir -U pip setuptools wheel && \
-    pip wheel --no-deps --wheel-dir /wheels .
+# Copy source so wheel build can access package files
 COPY . /app
+RUN pip install --no-cache-dir -U pip setuptools wheel && \
+    pip wheel --no-deps --wheel-dir /wheels /app
 RUN pip install --no-cache-dir /wheels/*.whl
 
 # Optional test dependencies (installed when building for CI/test)

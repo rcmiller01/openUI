@@ -1,0 +1,14 @@
+<!--
+Slack incoming webhook example: copy webhook URL into a secret and use it to POST a formatted message.
+This file shows a minimal JSON payload that converts our health alert into Slack text.
+-->
+
+{
+  "text": "Open-Deep-Coder alert: {{host}} reported {{status}}",
+  "blocks": [
+    { "type": "section", "text": { "type": "mrkdwn", "text": "*Open-Deep-Coder* alert on `{{host}}`: *{{status}}*" } },
+    { "type": "section", "fields": [ { "type": "mrkdwn", "text": "*Service:*
+open-deep-coder" }, { "type": "mrkdwn", "text": "*Status:*
+{{status}}" } ] }
+  ]
+}

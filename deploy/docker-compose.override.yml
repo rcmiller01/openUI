@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  backend:
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      # bind-mount host-managed .env (store secrets on host, not in repo)
+      - ./.env:/opt/open-deep-coder/.env:ro

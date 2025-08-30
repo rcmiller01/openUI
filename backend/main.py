@@ -8,6 +8,7 @@ Handles LLM integration, agent coordination, and development tools.
 import logging
 import os
 import sys
+import asyncio
 from contextlib import asynccontextmanager
 
 # Add parent directory to path for imports
@@ -99,12 +100,18 @@ async def lifespan(app: FastAPI):
     n8n_manager = N8NManager(
         n8n_url=os.getenv("N8N_URL", "http://localhost:5678")
     )
-    proxmox_manager = ProxmoxManager(
-        host=os.getenv("PROXMOX_HOST", "localhost"),
-        port=int(os.getenv("PROXMOX_PORT", "8006")),
-        username=os.getenv("PROXMOX_USERNAME", "root@pam"),
-        password=os.getenv("PROXMOX_PASSWORD", "")
-    )
+
+    # Initialize Proxmox manager conditionally
+    enable_proxmox = os.getenv("PROXMOX_ENABLED", "false").lower() == "true"
+    proxmox_manager = None
+    if enable_proxmox:
+        proxmox_manager = ProxmoxManager(
+            host=os.getenv("PROXMOX_HOST", "localhost"),
+            port=int(os.getenv("PROXMOX_PORT", "8006")),
+            username=os.getenv("PROXMOX_USERNAME", "root@pam"),
+            password=os.getenv("PROXMOX_PASSWORD", "")
+        )
+
     debug_manager = DebugManager()
     coordinator = EnhancedAgentCoordinator()
     tool_discovery = ToolDiscoveryManager()
@@ -115,7 +122,15 @@ async def lifespan(app: FastAPI):
     await lsp_manager.initialize()
     await mcp_manager.initialize()
     await n8n_manager.initialize()
-    await proxmox_manager.initialize()
+
+    # Initialize Proxmox conditionally
+    if enable_proxmox and proxmox_manager:
+        try:
+            await proxmox_manager.initialize()
+        except Exception as e:
+            logger.warning(f"Proxmox disabled (init failed): {e}")
+            proxmox_manager = None
+
     await debug_manager.initialize()
     await coordinator.initialize()
 
@@ -163,6 +178,29 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+def create_app() -> FastAPI:
+    """Return the FastAPI app instance (helper for tests)."""
+    return app
+
+
+def startup_for_tests() -> callable:
+    """Run application lifespan startup synchronously for tests.
+
+    Returns a callable to run shutdown/cleanup when tests complete.
+    """
+    cm = lifespan(app)
+    # Enter the async context to run startup
+    asyncio.run(cm.__aenter__())
+
+    def _shutdown():
+        try:
+            asyncio.run(cm.__aexit__(None, None, None))
+        except Exception:
+            pass
+
+    return _shutdown
 
 # Configure CORS from environment for safer defaults in production
 # Accepts a comma-separated list in ALLOWED_ORIGINS, otherwise falls back

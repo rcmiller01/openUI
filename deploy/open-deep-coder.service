@@ -1,0 +1,15 @@
+[Unit]
+Description=Open-Deep-Coder Backend (Docker Compose)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/open-deep-coder
+ExecStart=/usr/bin/docker-compose -f /opt/open-deep-coder/docker-compose.yml up -d
+ExecStop=/usr/bin/docker-compose -f /opt/open-deep-coder/docker-compose.yml down
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

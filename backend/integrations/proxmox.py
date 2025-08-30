@@ -85,8 +85,9 @@ class ProxmoxManager:
     async def initialize(self) -> None:
         """Initialize the Proxmox manager"""
         try:
+            verify_tls = os.getenv("PROXMOX_VERIFY_TLS", "false").lower() == "true"
             self.session = httpx.AsyncClient(
-                verify=False,  # Proxmox often uses self-signed certs
+                verify=verify_tls,  # Configurable TLS verification
                 timeout=30.0
             )
             await self._authenticate()
@@ -123,9 +124,10 @@ class ProxmoxManager:
         self.csrf_token = data["CSRFPreventionToken"]
 
         # Set auth cookie for future requests
-        self.session.cookies.set(
-            "PVEAuthCookie", self.ticket, domain=self.host
-        )
+        if self.ticket and self.session:
+            self.session.cookies.set(
+                "PVEAuthCookie", self.ticket, domain=self.host
+            )
 
     async def _make_request(
         self, method: str, endpoint: str, data: Optional[Dict] = None
@@ -144,7 +146,7 @@ class ProxmoxManager:
             method, url, json=data, headers=headers
         )
         response.raise_for_status()
-        return response.json()
+        return response.json()  # type: ignore
 
     async def get_containers(self, node: str) -> List[ProxmoxContainer]:
         """Get all containers on a node"""

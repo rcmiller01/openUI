@@ -1,0 +1,62 @@
+name: CI Build, Test & Artifact
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image with test deps
+        run: |
+          docker build --build-arg TEST_DEPS=1 -t open-deep-coder:ci .
+
+      - name: Run container
+        run: |
+          docker run -d --name open-deep-coder-ci -p 8000:8000 -e PROXMOX_ENABLED=false open-deep-coder:ci
+
+      - name: Wait for service
+        run: |
+          echo "Waiting for backend to be healthy..."
+          for i in {1..30}; do
+            if curl -sS http://localhost:8000/health | jq . >/dev/null 2>&1; then
+              echo "Service healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Service did not become healthy in time"
+          docker logs open-deep-coder-ci || true
+          exit 1
+
+      - name: Run pytest inside container
+        run: |
+          docker exec open-deep-coder-ci pytest -q || (docker logs open-deep-coder-ci || true; exit 1)
+
+      - name: Collect & compress diagnostics (on failure)
+        if: failure()
+        run: |
+          chmod +x ./scripts/collect_docker_artifacts.sh || true
+          ./scripts/collect_docker_artifacts.sh open-deep-coder-ci artifacts 1000 || true
+
+      - name: Upload compressed logs artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs
+          path: artifacts/docker-logs.tgz
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f open-deep-coder-ci || true

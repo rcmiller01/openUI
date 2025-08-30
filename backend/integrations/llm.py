@@ -7,6 +7,7 @@ Includes intelligent routing based on task type using RouteLLM concepts.
 
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Any
 
@@ -68,6 +69,60 @@ class LLMManager:
 
         self.is_initialized = True
         logger.info(f"LLM Manager initialized with {len(self.available_models)} models")
+
+    def _parse_size_to_int(self, value: Any, default: int = 4096) -> int:
+        """Robustly parse numeric or suffixed sizes like '8.0B', '13B', '4096'.
+
+        Returns an integer. Falls back to `default` on failure.
+        """
+        if value is None:
+            return default
+        # If it's already an int, return it
+        if isinstance(value, int):
+            return value
+        # If it's a float-like number, cast to int
+        if isinstance(value, float):
+            try:
+                return int(value)
+            except Exception:
+                return default
+
+        # Handle strings like '8.0B', '70B', '13B', '8192'
+        if isinstance(value, str):
+            s = value.strip()
+            # plain integer string
+            if s.isdigit():
+                try:
+                    return int(s)
+                except Exception:
+                    return default
+
+            m = re.match(r"^([\d\.]+)\s*([kKmMbB]?)$", s)
+            if m:
+                try:
+                    num = float(m.group(1))
+                except Exception:
+                    return default
+                suf = m.group(2).upper()
+                mult = 1
+                if suf == "B":
+                    mult = 1_000_000_000
+                elif suf == "M":
+                    mult = 1_000_000
+                elif suf == "K":
+                    mult = 1_000
+                # Prevent absurdly large values – cap to a reasonable max
+                try:
+                    val = int(num * mult)
+                    return max(1, min(val, 2**31 - 1))
+                except Exception:
+                    return default
+
+        # Last resort: try converting directly
+        try:
+            return int(value)
+        except Exception:
+            return default
 
     async def cleanup(self):
         """Cleanup HTTP clients"""
@@ -146,14 +201,19 @@ class LLMManager:
             models = []
 
             for model_data in data.get("models", []):
+                raw_ctx = (
+                    model_data.get("details", {}).get("parameter_size")
+                    or model_data.get("context_length")
+                    or 4096
+                )
+                context_length = self._parse_size_to_int(raw_ctx, default=4096)
+
                 model = LLMModel(
                     id=model_data["name"],
                     name=model_data["name"],
                     provider="ollama",
                     capabilities=["chat", "completion"],
-                    context_length=model_data.get("details", {}).get(
-                        "parameter_size", 4096
-                    ),
+                    context_length=context_length,
                     is_available=True,
                     description=f"Local model: {model_data['name']}",
                 )

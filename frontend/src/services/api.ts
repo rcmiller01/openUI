@@ -532,14 +532,16 @@ class ApiClient {
   // Tool Discovery Methods
   async getAvailableTools(category?: string): Promise<any[]> {
     try {
-      const url = category ? `${API_BASE_URL}/api/tools?category=${category}` : `${API_BASE_URL}/api/tools`;
+      const url = category 
+        ? `${API_BASE_URL}/api/tools?category=${encodeURIComponent(category)}`
+        : `${API_BASE_URL}/api/tools`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       return await response.json();
     } catch (error) {
-      console.error('Error getting available tools:', error);
+      console.error('Error fetching tools:', error);
       return [];
     }
   }

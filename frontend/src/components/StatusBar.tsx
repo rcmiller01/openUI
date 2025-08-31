@@ -59,7 +59,9 @@ export default function StatusBar() {
     isLocalMode, 
     toggleLocalMode,
     activeFile,
-    agents 
+    agents,
+    isChatPanelOpen,
+    toggleChatPanel
   } = useAppStore();
 
   const runningAgents = Object.values(agents).filter(agent => agent.status === 'running').length;
@@ -98,6 +100,10 @@ export default function StatusBar() {
       <StatusRight>
         <StatusItem onClick={toggleLocalMode}>
           {isLocalMode ? '🏠 Local' : '☁️ Remote'}
+        </StatusItem>
+        
+        <StatusItem onClick={toggleChatPanel}>
+          💬 Chat {isChatPanelOpen ? '(Open)' : '(Closed)'}
         </StatusItem>
         
         <StatusItem>

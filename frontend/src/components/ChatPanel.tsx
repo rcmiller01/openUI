@@ -124,6 +124,21 @@ const NewConversationButton = styled.button`
   }
 `;
 
+const AgentModeSelector = styled.select`
+  padding: 4px 8px;
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 4px;
+  background-color: ${props => props.theme.colors.bg.primary};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 12px;
+  margin-left: 8px;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.border.accent};
+  }
+`;
+
 export default function ChatPanel() {
   const {
     conversations,
@@ -132,21 +147,26 @@ export default function ChatPanel() {
     toggleChatPanel,
     addMessage,
     createConversation,
-    setAvailableModels,
-    agents
+    availableModels,
+    agents,
+    runAgent,
+    stopAgent
   } = useAppStore();
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [agentMode, setAgentMode] = useState<'ask' | 'research' | 'code' | 'plan'>('ask');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
 
-  // Load available models on mount
+  // Load available models on mount and update global store
   useEffect(() => {
     const loadModels = async () => {
       try {
         const models = await apiClient.getAvailableModels();
+        // Update global store instead of local state
+        const { setAvailableModels } = useAppStore.getState();
         setAvailableModels(models);
       } catch (error) {
         console.error('Error loading models:', error);
@@ -154,7 +174,7 @@ export default function ChatPanel() {
     };
     
     loadModels();
-  }, [setAvailableModels]);
+  }, []);
 
   // Create initial conversation if none exists
   useEffect(() => {
@@ -233,7 +253,18 @@ export default function ChatPanel() {
     <ChatContainer>
       <ChatHeader>
         <ChatTitle>AI Assistant</ChatTitle>
-        <CloseButton onClick={toggleChatPanel}>✕</CloseButton>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <AgentModeSelector
+            value={agentMode}
+            onChange={(e) => setAgentMode(e.target.value as any)}
+          >
+            <option value="ask">Default Agent</option>
+            <option value="research">Research Agent</option>
+            <option value="code">Code Agent</option>
+            <option value="plan">Plan Agent</option>
+          </AgentModeSelector>
+          <CloseButton onClick={toggleChatPanel}>✕</CloseButton>
+        </div>
       </ChatHeader>
 
       <MessagesContainer>

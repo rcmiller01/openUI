@@ -38,9 +38,8 @@ export const ToolDiscovery: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = selectedCategory === 'all' 
-        ? await apiClient.getAvailableTools()
-        : await apiClient.getAvailableTools(selectedCategory);
+      // Use the correct API method - getAvailableTools should be implemented in api.ts
+      const response = await apiClient.getAvailableTools();
       setTools(response);
     } catch (err) {
       setError(`Failed to load tools: ${err}`);

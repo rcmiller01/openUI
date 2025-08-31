@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
-import { useAppStore } from './store';
+import { useAppStore, AgentType } from './store';
 import { themes } from './themes';
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
@@ -147,7 +147,9 @@ export default function App() {
     isAdvancedToolsOpen,
     setIsAdvancedToolsOpen,
     conversations,
-    createConversation
+    createConversation,
+    agents,
+    runAgent
   } = useAppStore();
 
   const currentTheme = themes[theme as keyof typeof themes];
@@ -158,6 +160,23 @@ export default function App() {
       createConversation('Welcome to Open-Deep-Coder');
     }
   }, [conversations.length, createConversation]);
+
+  // Start background agents
+  useEffect(() => {
+    const startBackgroundAgents = () => {
+      // Start orchestrator, planner, and implementer in background
+      const backgroundAgents: AgentType[] = ['orchestrator', 'planner', 'implementer'];
+      backgroundAgents.forEach(agentType => {
+        if (agents[agentType].status === 'idle') {
+          runAgent(agentType, `Background ${agentType} service`);
+        }
+      });
+    };
+
+    // Start background agents after a short delay
+    const timer = setTimeout(startBackgroundAgents, 2000);
+    return () => clearTimeout(timer);
+  }, [agents, runAgent]);
 
   return (
     <ThemeProvider theme={currentTheme}>

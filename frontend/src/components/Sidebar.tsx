@@ -118,8 +118,21 @@ export default function Sidebar() {
             🔍 Search
           </SectionHeader>
           {activeSection === 'search' && (
-            <div style={{ padding: '16px', fontSize: '13px', color: '#666' }}>
-              Search functionality coming soon...
+            <div style={{ padding: '16px' }}>
+              <input 
+                type="text" 
+                placeholder="Search files..." 
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}
+              />
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                Search results will appear here...
+              </div>
             </div>
           )}
         </Section>
@@ -131,8 +144,41 @@ export default function Sidebar() {
             🌿 Source Control
           </SectionHeader>
           {activeSection === 'git' && (
-            <div style={{ padding: '16px', fontSize: '13px', color: '#666' }}>
-              Git integration coming soon...
+            <div style={{ padding: '16px' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <button style={{
+                  padding: '4px 8px',
+                  marginRight: '4px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  Commit
+                </button>
+                <button style={{
+                  padding: '4px 8px',
+                  marginRight: '4px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  Push
+                </button>
+                <button style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  Pull
+                </button>
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Git status and changes will appear here...
+              </div>
             </div>
           )}
         </Section>
@@ -144,8 +190,41 @@ export default function Sidebar() {
             🧩 Extensions
           </SectionHeader>
           {activeSection === 'extensions' && (
-            <div style={{ padding: '16px', fontSize: '13px', color: '#666' }}>
-              LSP, MCP, and n8n integrations coming soon...
+            <div style={{ padding: '16px' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <button style={{
+                  padding: '4px 8px',
+                  marginRight: '4px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  LSP
+                </button>
+                <button style={{
+                  padding: '4px 8px',
+                  marginRight: '4px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  MCP
+                </button>
+                <button style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  background: '#f8f8f8'
+                }}>
+                  n8n
+                </button>
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Extension status and management...
+              </div>
             </div>
           )}
         </Section>

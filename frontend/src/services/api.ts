@@ -666,219 +666,86 @@ class ApiClient {
     }
   }
 
-  // Enhanced Coordination Methods
-  async getCoordinationStatus(): Promise<any> {
+  async authenticateGit(username: string, token: string, email: string): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/coordination/status`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error getting coordination status:', error);
-      return { agents: [], metrics: {} };
-    }
-  }
-
-  async submitCoordinationTask(type: string, description: string, priority: string = 'normal', dependencies?: string[], prerequisites?: Record<string, any>): Promise<any> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/coordination/task`, {
+      const response = await fetch(`${API_BASE_URL}/api/git/authenticate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type,
-          description,
-          priority,
-          dependencies,
-          prerequisites
-        }),
+        body: JSON.stringify({ username, token, email }),
       });
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
       return await response.json();
     } catch (error) {
-      console.error('Error submitting coordination task:', error);
+      console.error('Error authenticating with Git:', error);
       throw error;
     }
   }
 
-  // Container Management Methods
-  async getProxmoxNodes(): Promise<string[]> {
+  async createGitRepository(name: string, description?: string, isPrivate?: boolean): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/nodes`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.nodes || [];
-    } catch (error) {
-      console.error('Error getting Proxmox nodes:', error);
-      return [];
-    }
-  }
-
-  async getContainers(node: string): Promise<any[]> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.containers || [];
-    } catch (error) {
-      console.error('Error getting containers:', error);
-      return [];
-    }
-  }
-
-  async getVMs(node: string): Promise<any[]> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/qemu`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.vms || [];
-    } catch (error) {
-      console.error('Error getting VMs:', error);
-      return [];
-    }
-  }
-
-  async startContainer(node: string, vmid: number): Promise<any> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/start`, {
+      const response = await fetch(`${API_BASE_URL}/api/git/repositories`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description, private: isPrivate }),
       });
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
       return await response.json();
     } catch (error) {
-      console.error('Error starting container:', error);
+      console.error('Error creating Git repository:', error);
       throw error;
     }
   }
 
-  async stopContainer(node: string, vmid: number): Promise<any> {
+  async cloneGitRepository(url: string, localPath: string): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/stop`, {
+      const response = await fetch(`${API_BASE_URL}/api/git/clone`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url, local_path: localPath }),
       });
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
       return await response.json();
     } catch (error) {
-      console.error('Error stopping container:', error);
+      console.error('Error cloning Git repository:', error);
       throw error;
     }
   }
 
-  async restartContainer(node: string, vmid: number): Promise<any> {
+  async initGitRepository(localPath: string, name: string): Promise<any> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/restart`, {
+      const response = await fetch(`${API_BASE_URL}/api/git/init`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ local_path: localPath, name }),
       });
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
       return await response.json();
     } catch (error) {
-      console.error('Error restarting container:', error);
-      throw error;
-    }
-  }
-
-  async getContainerStatus(node: string, vmid: number): Promise<string> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/status`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.status;
-    } catch (error) {
-      console.error('Error getting container status:', error);
-      return 'unknown';
-    }
-  }
-
-  async listContainerFiles(node: string, vmid: number, path: string = '/'): Promise<any[]> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files?path=${encodeURIComponent(path)}`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.files || [];
-    } catch (error) {
-      console.error('Error listing container files:', error);
-      return [];
-    }
-  }
-
-  async readContainerFile(node: string, vmid: number, filePath: string): Promise<string> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files/content?file_path=${encodeURIComponent(filePath)}`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.content || '';
-    } catch (error) {
-      console.error('Error reading container file:', error);
-      return '';
-    }
-  }
-
-  async writeContainerFile(node: string, vmid: number, filePath: string, content: string): Promise<any> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/files/content?file_path=${encodeURIComponent(filePath)}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error writing container file:', error);
-      throw error;
-    }
-  }
-
-  async executeInContainer(node: string, vmid: number, command: string): Promise<any> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/containers/${node}/lxc/${vmid}/exec`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ command }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error executing command in container:', error);
+      console.error('Error initializing Git repository:', error);
       throw error;
     }
   }

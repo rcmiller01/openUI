@@ -43,6 +43,7 @@ try:
     from backend.integrations.n8n import N8NManager
     from backend.integrations.proxmox import ProxmoxManager
     from backend.integrations.tool_discovery import ToolDiscoveryManager
+    from backend.integrations.git import GitManager
 except ImportError:
     # Fallback for when running as script
     from agents import AgentManager
@@ -64,6 +65,7 @@ except ImportError:
     from integrations.n8n import N8NManager
     from integrations.proxmox import ProxmoxManager
     from integrations.tool_discovery import ToolDiscoveryManager
+    from integrations.git import GitManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,13 +81,14 @@ proxmox_manager: ProxmoxManager | None = None
 debug_manager: DebugManager | None = None
 coordinator: EnhancedAgentCoordinator | None = None
 tool_discovery: ToolDiscoveryManager | None = None
+git_manager: GitManager | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global agent_manager, llm_manager, lsp_manager, mcp_manager, n8n_manager
-    global proxmox_manager, debug_manager, coordinator, tool_discovery
+    global proxmox_manager, debug_manager, coordinator, tool_discovery, git_manager
 
     # Startup
     logger.info("Starting Open-Deep-Coder backend with enhanced capabilities...")
@@ -115,6 +118,9 @@ async def lifespan(app: FastAPI):
     debug_manager = DebugManager()
     coordinator = EnhancedAgentCoordinator()
     tool_discovery = ToolDiscoveryManager()
+
+    # Initialize Git manager
+    git_manager = GitManager()
 
     # Start services in order
     await llm_manager.initialize()
@@ -252,6 +258,7 @@ async def health_check():
             "coordinator": coordinator is not None and coordinator.is_initialized,
             "tool_discovery": tool_discovery is not None
             and tool_discovery.is_initialized,
+            "git_manager": git_manager is not None and git_manager.is_ready(),
         },
         "capabilities": {
             "enhanced_lsp": True,
@@ -867,6 +874,137 @@ async def setup_git_automation(request: dict):
     except Exception as e:
         logger.error(f"Error setting up git automation: {e}")
     raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# Git endpoints
+@app.post("/api/git/authenticate")
+async def authenticate_git(request: dict):
+    """Authenticate with Git credentials"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.authenticate(
+            request["username"], request["token"], request["email"]
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Git authentication error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/repositories")
+async def create_git_repository(request: dict):
+    """Create a new Git repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.create_repository(
+            request["name"],
+            request.get("description", ""),
+            request.get("private", False)
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error creating repository: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/clone")
+async def clone_git_repository(request: dict):
+    """Clone a Git repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.clone_repository(
+            request["url"], request["local_path"]
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error cloning repository: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/init")
+async def init_git_repository(request: dict):
+    """Initialize a new Git repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.init_repository(
+            request["local_path"], request["name"]
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error initializing repository: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/git/status")
+async def get_git_status(repo_path: str):
+    """Get Git status for a repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.get_status(repo_path)
+        return result
+    except Exception as e:
+        logger.error(f"Error getting git status: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/commit")
+async def commit_git_changes(request: dict):
+    """Commit changes to Git repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.commit_changes(
+            request["repo_path"],
+            request["message"],
+            request.get("files")
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error committing changes: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/push")
+async def push_git_changes(request: dict):
+    """Push changes to remote repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.push_changes(
+            request["repo_path"], request.get("branch", "main")
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error pushing changes: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/git/pull")
+async def pull_git_changes(request: dict):
+    """Pull changes from remote repository"""
+    if not git_manager:
+        raise HTTPException(status_code=500, detail="Git manager not initialized")
+
+    try:
+        result = await git_manager.pull_changes(
+            request["repo_path"], request.get("branch", "main")
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error pulling changes: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Development and testing endpoints

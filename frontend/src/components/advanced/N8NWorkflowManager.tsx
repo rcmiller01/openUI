@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
 import { apiClient } from '../../services/api';
+import Modal from '../ui/Modal';
 
 interface Workflow {
   id: string;
@@ -31,20 +33,31 @@ export const N8NWorkflowManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [n8nUrl, setN8nUrl] = useState<string>(localStorage.getItem('N8N_URL') || 'http://localhost:5678');
   const [n8nToken, setN8nToken] = useState<string>(localStorage.getItem('N8N_TOKEN') || '');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [copyNote, setCopyNote] = useState<'idle' | 'copied' | null>('idle');
+
+  const ControlsRow = styled.div`
+    display: flex;
+    gap: 8px;
+  `;
 
   useEffect(() => {
     loadWorkflows();
   }, []);
 
   const saveN8nCredentials = async () => {
+    setModalOpen(true);
+    setSaveStatus('saving');
     try {
       await apiClient.storeCredential('n8n', { url: n8nUrl, token: n8nToken });
       localStorage.setItem('N8N_URL', n8nUrl);
-      alert('n8n credentials saved to server');
+      setSaveStatus('success');
+      setCopyNote('idle');
       loadWorkflows();
     } catch (err) {
       console.error('Error saving n8n credentials', err);
-      alert('Failed to save n8n credentials');
+      setSaveStatus('error');
     }
   };
 
@@ -133,12 +146,13 @@ export const N8NWorkflowManager: React.FC = () => {
   };
 
   return (
+    <>
     <div className="p-6 bg-white rounded-lg shadow-sm border">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
           🔄 n8n Workflow Manager
         </h2>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <ControlsRow>
           <input value={n8nUrl} onChange={(e) => setN8nUrl(e.target.value)} placeholder="n8n url" />
           <input value={n8nToken} onChange={(e) => setN8nToken(e.target.value)} placeholder="n8n token" />
           <button onClick={saveN8nCredentials} className="px-4 py-2 bg-green-600 text-white rounded-md">Save</button>
@@ -149,7 +163,7 @@ export const N8NWorkflowManager: React.FC = () => {
           >
             {loading ? '🔄 Loading...' : '🔄 Refresh'}
           </button>
-        </div>
+        </ControlsRow>
       </div>
 
       {error && (
@@ -381,6 +395,39 @@ export const N8NWorkflowManager: React.FC = () => {
           <li>• Connected to n8n server at http://192.168.50.145:5678/</li>
         </ul>
       </div>
-    </div>
+  </div>
+  <Modal open={modalOpen} title="Save n8n Credentials" onClose={() => { setModalOpen(false); setSaveStatus('idle'); setCopyNote('idle'); }}>
+      <div>
+        {saveStatus === 'saving' && (
+          <div>
+            <div>Saving credentials to server...</div>
+            <div className="mt-2">🔄</div>
+          </div>
+        )}
+
+        {saveStatus === 'success' && (
+          <div>
+            <div className="font-semibold text-green-600">Credentials saved</div>
+            <div className="mt-2">URL: <span className="font-mono">{n8nUrl}</span></div>
+            <div className="mt-3 flex items-center space-x-2">
+              <button className="px-3 py-1 bg-gray-200 rounded" onClick={async () => { try { await navigator.clipboard.writeText(n8nUrl); setCopyNote('copied'); setTimeout(() => setCopyNote('idle'), 1500); } catch {} }}>Copy URL</button>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => { setModalOpen(false); setSaveStatus('idle'); }}>Close</button>
+              {copyNote === 'copied' && <div className="text-sm text-green-600 ml-2">Copied</div>}
+            </div>
+          </div>
+        )}
+
+        {saveStatus === 'error' && (
+          <div>
+            <div className="text-red-600 font-semibold">Failed to save credentials</div>
+            <div className="mt-2">Check server logs and try again.</div>
+            <div className="mt-3">
+              <button className="px-3 py-1 bg-red-100 rounded" onClick={() => { setModalOpen(false); setSaveStatus('idle'); }}>Close</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+    </>
   );
 };

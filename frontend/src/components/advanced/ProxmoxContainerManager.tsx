@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import apiClient from '../../services/api';
+import Modal from '../ui/Modal';
 
 const Container = styled.div`
   padding: 20px;
@@ -172,6 +173,35 @@ const FileSize = styled.span`
   margin-right: 10px;
 `;
 
+const InputsRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+`;
+
+const CenteredLoading = styled.div`
+  text-align: center;
+  padding: 20px;
+`;
+
+const MetaSpan = styled.span`
+  font-size: 12px;
+  color: var(--text-secondary);
+`;
+
+const SpinnerWrap = styled.div`
+  margin-top: 8px;
+`;
+
+const SaveButton = styled.button`
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  cursor: pointer;
+`;
+
 const LoadingSpinner = styled.div`
   display: inline-block;
   width: 16px;
@@ -214,6 +244,9 @@ export const ProxmoxContainerManager: React.FC = () => {
   const [proxmoxPort, setProxmoxPort] = useState<string>(localStorage.getItem('PROXMOX_PORT') || '8006');
   const [proxmoxUser, setProxmoxUser] = useState<string>(localStorage.getItem('PROXMOX_USER') || 'root@pam');
   const [proxmoxPass, setProxmoxPass] = useState<string>(localStorage.getItem('PROXMOX_PASS') || '');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [copyNote, setCopyNote] = useState<'idle' | 'copied' | null>('idle');
   const [containers, setContainers] = useState<ProxmoxContainer[]>([]);
   const [selectedContainer, setSelectedContainer] = useState<ProxmoxContainer | null>(null);
   const [containerFiles, setContainerFiles] = useState<ContainerFile[]>([]);
@@ -225,6 +258,8 @@ export const ProxmoxContainerManager: React.FC = () => {
   }, []);
 
   const saveProxmoxCredentials = async () => {
+    setModalOpen(true);
+    setSaveStatus('saving');
     try {
       await apiClient.storeCredential('proxmox', {
         host: proxmoxHost,
@@ -235,12 +270,13 @@ export const ProxmoxContainerManager: React.FC = () => {
       localStorage.setItem('PROXMOX_HOST', proxmoxHost);
       localStorage.setItem('PROXMOX_PORT', proxmoxPort);
       localStorage.setItem('PROXMOX_USER', proxmoxUser);
-      alert('Proxmox credentials saved to server');
+      setSaveStatus('success');
+      setCopyNote('idle');
       // Optionally reload nodes
       loadNodes();
     } catch (err) {
       console.error('Error saving proxmox credentials', err);
-      alert('Failed to save Proxmox credentials');
+      setSaveStatus('error');
     }
   };
 
@@ -326,23 +362,21 @@ export const ProxmoxContainerManager: React.FC = () => {
   };
 
   return (
+    <>
     <Container>
       <Header>
         🐳 Proxmox Container Manager
       </Header>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <InputsRow>
         <input value={proxmoxHost} onChange={(e) => setProxmoxHost(e.target.value)} placeholder="host" />
         <input value={proxmoxPort} onChange={(e) => setProxmoxPort(e.target.value)} placeholder="port" />
         <input value={proxmoxUser} onChange={(e) => setProxmoxUser(e.target.value)} placeholder="username" />
         <input value={proxmoxPass} onChange={(e) => setProxmoxPass(e.target.value)} placeholder="password" type="password" />
-        <button onClick={saveProxmoxCredentials} style={{ padding: '6px 10px' }}>Save</button>
-      </div>
+        <SaveButton onClick={saveProxmoxCredentials}>Save</SaveButton>
+      </InputsRow>
 
-      <NodeSelector
-        value={selectedNode}
-        onChange={(e) => setSelectedNode(e.target.value)}
-      >
+  <NodeSelector aria-label="Proxmox node" value={selectedNode} onChange={(e) => setSelectedNode(e.target.value)}>
         <option value="">Select Node</option>
         {nodes.map(node => (
           <option key={node} value={node}>{node}</option>
@@ -350,10 +384,10 @@ export const ProxmoxContainerManager: React.FC = () => {
       </NodeSelector>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
+        <CenteredLoading>
           <LoadingSpinner />
           <p>Loading containers...</p>
-        </div>
+        </CenteredLoading>
       ) : (
         <ContainerGrid>
           {containers.map(container => (
@@ -444,14 +478,46 @@ export const ProxmoxContainerManager: React.FC = () => {
                 <FileSize>
                   {file.is_directory ? '' : formatBytes(file.size)}
                 </FileSize>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  {formatDate(file.modified)}
-                </span>
+                <MetaSpan>{formatDate(file.modified)}</MetaSpan>
               </FileItem>
             ))}
           </FileList>
         </FileBrowser>
       )}
-    </Container>
+  </Container>
+  <Modal open={modalOpen} title="Save Proxmox Credentials" onClose={() => { setModalOpen(false); setSaveStatus('idle'); setCopyNote('idle'); }}>
+      <div>
+        {saveStatus === 'saving' && (
+          <div>
+            <div>Saving credentials to server...</div>
+            <SpinnerWrap><LoadingSpinner /></SpinnerWrap>
+          </div>
+        )}
+
+        {saveStatus === 'success' && (
+          <div>
+            <div className="font-semibold text-green-600">Credentials saved</div>
+            <div className="mt-2">Host: <span className="font-mono">{proxmoxHost}:{proxmoxPort}</span></div>
+            <div className="mt-2">User: <span className="font-mono">{proxmoxUser}</span></div>
+            <div className="mt-3 flex items-center space-x-2">
+              <button className="px-3 py-1 bg-gray-200 rounded" onClick={async () => { try { await navigator.clipboard.writeText(`${proxmoxHost}:${proxmoxPort}`); setCopyNote('copied'); setTimeout(() => setCopyNote('idle'), 1500); } catch {} }}>Copy Host</button>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={() => { setModalOpen(false); setSaveStatus('idle'); }}>Close</button>
+              {copyNote === 'copied' && <div className="text-sm text-green-600 ml-2">Copied</div>}
+            </div>
+          </div>
+        )}
+
+        {saveStatus === 'error' && (
+          <div>
+            <div className="text-red-600 font-semibold">Failed to save credentials</div>
+            <div className="mt-2">Check server logs and try again.</div>
+            <div className="mt-3">
+              <button className="px-3 py-1 bg-red-100 rounded" onClick={() => { setModalOpen(false); setSaveStatus('idle'); }}>Close</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+    </>
   );
 };

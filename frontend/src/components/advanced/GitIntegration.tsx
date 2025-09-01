@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../services/api';
+import Modal from '../ui/Modal';
 
 export const GitIntegration: React.FC = () => {
   const [gitStatus, setGitStatus] = useState<any>({});
   const [repositoryPath, setRepositoryPath] = useState('.');
   const [commitMessage, setCommitMessage] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [remoteConfig, setRemoteConfig] = useState({
-    remote: 'origin',
-    branch: 'main'
-  });
+  const remoteConfig = { remote: 'origin', branch: 'main' };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authStatus, setAuthStatus] = useState<any>({});
+  const [, setAuthStatus] = useState<any>({});
   const [githubDevice, setGithubDevice] = useState<any>(null);
-  const [githubClientId, setGithubClientId] = useState<string>(localStorage.getItem('GITHUB_CLIENT_ID') || '');
+  const [deviceModalOpen, setDeviceModalOpen] = useState(false);
+  const [pollStatus, setPollStatus] = useState<string | null>(null);
+  const pollingRef = useRef<boolean>(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'code' | 'url' | null>('idle');
+  const githubClientId = localStorage.getItem('GITHUB_CLIENT_ID') || '';
   const [repoForm, setRepoForm] = useState({
     name: '',
     description: '',
@@ -53,20 +56,43 @@ export const GitIntegration: React.FC = () => {
         const resp = await apiClient.githubDeviceStart(githubClientId);
         setGithubDevice(resp);
         localStorage.setItem('GITHUB_CLIENT_ID', githubClientId);
-        alert(`Open ${resp.verification_uri} and enter code ${resp.user_code}`);
-        // start polling loop
-        const poll = async () => {
-          const p = await apiClient.githubDevicePoll(githubClientId, resp.device_code);
-          if (p.status === 'ok') {
-            setAuthStatus({ github: 'authenticated' });
-            alert('GitHub device authenticated and token stored on server');
-          } else if (p.status === 'pending') {
-            setTimeout(poll, (resp.interval || 5) * 1000);
-          } else {
-            alert(`GitHub auth error: ${p.error} ${p.description || ''}`);
-          }
-        };
-        setTimeout(poll, (resp.interval || 5) * 1000);
+        // open modal and subscribe to server-sent events for the device_code
+        setDeviceModalOpen(true);
+        setPollStatus('waiting');
+        try {
+          const url = `/api/credentials/github/device/subscribe?device_code=${encodeURIComponent(resp.device_code)}`;
+          const es = new EventSource(url);
+          eventSourceRef.current = es;
+          es.onmessage = (ev) => {
+            try {
+              const data = JSON.parse(ev.data);
+              if (data.status === 'ok') {
+                setAuthStatus({ github: 'authenticated' });
+                setPollStatus('authenticated');
+                es.close();
+                eventSourceRef.current = null;
+              } else if (data.status === 'pending') {
+                setPollStatus('pending');
+              } else if (data.status === 'error') {
+                setPollStatus('error');
+                setError(data.error || 'unknown');
+                es.close();
+                eventSourceRef.current = null;
+              }
+            } catch (e) {
+              console.error('Invalid SSE message', e);
+            }
+          };
+          es.onerror = (ev) => {
+            console.error('SSE error', ev);
+            setPollStatus('error');
+            setError('SSE connection error');
+            try { es.close(); } catch {};
+            eventSourceRef.current = null;
+          };
+        } catch (e) {
+          setError(`Failed to open EventSource: ${e}`);
+        }
       } catch (err) {
         setError(`Device auth error: ${err}`);
       }
@@ -92,6 +118,22 @@ export const GitIntegration: React.FC = () => {
       setError(`Authentication error: ${err}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopy = async (what: 'code' | 'url') => {
+    try {
+      if (what === 'code' && githubDevice?.user_code) {
+        await navigator.clipboard.writeText(githubDevice.user_code);
+        setCopyStatus('code');
+      } else if (what === 'url' && githubDevice?.verification_uri) {
+        await navigator.clipboard.writeText(githubDevice.verification_uri);
+        setCopyStatus('url');
+      }
+      setTimeout(() => setCopyStatus('idle'), 2000);
+    } catch (_) {
+      // ignore clipboard failures
+      setCopyStatus('idle');
     }
   };
 
@@ -231,25 +273,10 @@ export const GitIntegration: React.FC = () => {
     }
   };
 
-  const toggleFileSelection = (file: string) => {
-    setSelectedFiles(prev => 
-      prev.includes(file) 
-        ? prev.filter(f => f !== file)
-        : [...prev, file]
-    );
-  };
-
-  const selectAllModified = () => {
-    if (gitStatus.modified) {
-      setSelectedFiles(gitStatus.modified);
-    }
-  };
-
-  const clearSelection = () => {
-    setSelectedFiles([]);
-  };
+  // selection helpers removed (not currently used in UI)
 
   return (
+    <>
     <div className="p-6 bg-white rounded-lg shadow-sm border">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
@@ -480,5 +507,76 @@ export const GitIntegration: React.FC = () => {
         </div>
       </div>
     </div>
+    
+    <Modal
+      open={deviceModalOpen}
+      title="GitHub Device Authorization"
+      onClose={() => {
+        setDeviceModalOpen(false);
+        pollingRef.current = false;
+        setPollStatus(null);
+        setCopyStatus('idle');
+        if (eventSourceRef.current) {
+          try { eventSourceRef.current.close(); } catch {};
+          eventSourceRef.current = null;
+        }
+      }}
+    >
+      {githubDevice ? (
+        <div>
+          {pollStatus === 'authenticated' ? (
+            <div className="text-center">
+              <div className="text-2xl font-semibold text-green-600">✔ Authorized</div>
+              <div className="mt-2 text-sm text-gray-600">Token stored on the server. You can close this dialog.</div>
+              <div className="mt-4">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={() => { setDeviceModalOpen(false); pollingRef.current = false; setPollStatus(null); }}>Close</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-2">Open the following URL and enter the user code shown below:</div>
+              <div className="mb-2 font-mono break-all">{githubDevice.verification_uri}</div>
+              <div className="mb-2 font-mono text-lg font-semibold">{githubDevice.user_code}</div>
+              <div className="flex items-center space-x-2 mt-2">
+                <button
+                  className="px-3 py-1 bg-gray-200 rounded flex items-center"
+                  onClick={() => handleCopy('code')}
+                >
+                  Copy Code
+                  {copyStatus === 'code' && <span className="ml-2 text-green-600">✓</span>}
+                </button>
+                <button
+                  className="px-3 py-1 bg-gray-200 rounded flex items-center"
+                  onClick={() => handleCopy('url')}
+                >
+                  Copy URL
+                  {copyStatus === 'url' && <span className="ml-2 text-green-600">✓</span>}
+                </button>
+                <button className="px-3 py-1 bg-red-100 rounded" onClick={() => { pollingRef.current = false; setDeviceModalOpen(false); setPollStatus(null); }}>Cancel</button>
+                <div className="ml-2" aria-live="polite">
+                  {(pollStatus === 'pending' || pollStatus === 'waiting') && (
+                    <div className="inline-flex items-center text-sm text-gray-600">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+                      </svg>
+                      Waiting for approval on GitHub...
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4">
+                <div>Status: <span className="font-medium">{pollStatus}</span></div>
+                {pollStatus === 'pending' && <div className="text-yellow-600 mt-2">Waiting for user action on GitHub...</div>}
+                {pollStatus === 'error' && <div className="text-red-600 mt-2">Authentication failed: {error}</div>}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>Starting device authorization...</div>
+      )}
+    </Modal>
+    </>
   );
 };

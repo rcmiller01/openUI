@@ -237,7 +237,8 @@ frontend_dist = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"
 )
 if os.path.isdir(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+    # Mount static assets under /static to avoid shadowing API routes like /health
+    app.mount("/static", StaticFiles(directory=frontend_dist, html=True), name="frontend_static")
 
 
 # Health check endpoint

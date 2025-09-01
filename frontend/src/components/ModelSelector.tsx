@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useAppStore } from '../store';
+import { useEffect, useState } from 'react';
+import apiClient from '../services/api';
 
 const SelectorContainer = styled.div`
   display: flex;
@@ -59,6 +61,23 @@ const ModelInfo = styled.div`
   color: ${props => props.theme.colors.text.muted};
 `;
 
+const SettingsGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 8px;
+`;
+
+const SmallInput = styled.input`
+  padding: 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  width: 220px;
+  background: ${props => props.theme.colors.bg.primary};
+  color: ${props => props.theme.colors.text.primary};
+`;
+
 const ToggleButton = styled.button<{ active: boolean }>`
   padding: 4px 8px;
   border: 1px solid ${props => props.theme.colors.border.primary};
@@ -86,6 +105,12 @@ const ToggleButton = styled.button<{ active: boolean }>`
   }
 `;
 
+const ToggleGroup = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: center;
+`;
+
 export default function ModelSelector() {
   const {
     availableModels,
@@ -94,6 +119,40 @@ export default function ModelSelector() {
     setSelectedModel,
     toggleLocalMode
   } = useAppStore();
+
+  // Local UI for API keys (persisted to localStorage)
+  const [openrouterKey, setOpenrouterKey] = useState<string | null>(localStorage.getItem('OPENROUTER_API_KEY'));
+  const [ollamaUrl, setOllamaUrl] = useState<string>(localStorage.getItem('OLLAMA_BASE_URL') || 'http://localhost:11434');
+
+  useEffect(() => {
+    if (openrouterKey) localStorage.setItem('OPENROUTER_API_KEY', openrouterKey);
+    else localStorage.removeItem('OPENROUTER_API_KEY');
+  }, [openrouterKey]);
+
+  useEffect(() => {
+    if (ollamaUrl) localStorage.setItem('OLLAMA_BASE_URL', ollamaUrl);
+    else localStorage.removeItem('OLLAMA_BASE_URL');
+  }, [ollamaUrl]);
+
+  const saveOpenrouterKey = async () => {
+    try {
+      await apiClient.storeCredential('openrouter', { api_key: openrouterKey });
+      alert('OpenRouter key saved to server');
+    } catch (err) {
+      console.error('Error saving openrouter key', err);
+      alert('Failed to save OpenRouter key');
+    }
+  };
+
+  const saveOllamaUrl = async () => {
+    try {
+      await apiClient.storeCredential('ollama', { base_url: ollamaUrl });
+      alert('Ollama URL saved to server');
+    } catch (err) {
+      console.error('Error saving ollama url', err);
+      alert('Failed to save Ollama URL');
+    }
+  };
 
   const filteredModels = isLocalMode 
     ? availableModels.filter(m => m.provider === 'ollama')
@@ -114,7 +173,7 @@ export default function ModelSelector() {
     <SelectorContainer>
       <SelectorLabel>Model:</SelectorLabel>
       
-      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+      <ToggleGroup>
         <ToggleButton 
           active={!isLocalMode}
           onClick={() => !isLocalMode || toggleLocalMode()}
@@ -129,7 +188,7 @@ export default function ModelSelector() {
         >
           Local
         </ToggleButton>
-      </div>
+      </ToggleGroup>
       
       <Select value={selectedModel || ''} onChange={handleModelChange}>
         <option value="">Auto-select model</option>
@@ -148,6 +207,24 @@ export default function ModelSelector() {
           <span>{selectedModelInfo.contextLength.toLocaleString()} ctx</span>
         </ModelInfo>
       )}
+
+      {/* Small settings inline for API keys */}
+      <SettingsGroup>
+        <SmallInput
+          type="text"
+          placeholder="OpenRouter API Key"
+          value={openrouterKey || ''}
+          onChange={(e) => setOpenrouterKey(e.target.value || null)}
+        />
+  <ToggleButton active={false} onClick={saveOpenrouterKey}>Save</ToggleButton>
+        <SmallInput
+          type="text"
+          placeholder="Ollama URL (http://host:port)"
+          value={ollamaUrl}
+          onChange={(e) => setOllamaUrl(e.target.value)}
+        />
+  <ToggleButton active={false} onClick={saveOllamaUrl}>Save</ToggleButton>
+      </SettingsGroup>
     </SelectorContainer>
   );
 }

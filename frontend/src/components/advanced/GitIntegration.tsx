@@ -13,6 +13,8 @@ export const GitIntegration: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authStatus, setAuthStatus] = useState<any>({});
+  const [githubDevice, setGithubDevice] = useState<any>(null);
+  const [githubClientId, setGithubClientId] = useState<string>(localStorage.getItem('GITHUB_CLIENT_ID') || '');
   const [repoForm, setRepoForm] = useState({
     name: '',
     description: '',
@@ -45,12 +47,38 @@ export const GitIntegration: React.FC = () => {
   };
 
   const handleAuthenticate = async () => {
+    // Offer device flow if client id is present, otherwise fallback to token prompt
+    if (githubClientId) {
+      try {
+        const resp = await apiClient.githubDeviceStart(githubClientId);
+        setGithubDevice(resp);
+        localStorage.setItem('GITHUB_CLIENT_ID', githubClientId);
+        alert(`Open ${resp.verification_uri} and enter code ${resp.user_code}`);
+        // start polling loop
+        const poll = async () => {
+          const p = await apiClient.githubDevicePoll(githubClientId, resp.device_code);
+          if (p.status === 'ok') {
+            setAuthStatus({ github: 'authenticated' });
+            alert('GitHub device authenticated and token stored on server');
+          } else if (p.status === 'pending') {
+            setTimeout(poll, (resp.interval || 5) * 1000);
+          } else {
+            alert(`GitHub auth error: ${p.error} ${p.description || ''}`);
+          }
+        };
+        setTimeout(poll, (resp.interval || 5) * 1000);
+      } catch (err) {
+        setError(`Device auth error: ${err}`);
+      }
+      return;
+    }
+
     const username = prompt('Enter your Git username:');
     const token = prompt('Enter your Git token:');
     const email = prompt('Enter your email:');
-    
+
     if (!username || !token || !email) return;
-    
+
     setLoading(true);
     try {
       const result = await apiClient.authenticateGit(username, token, email);

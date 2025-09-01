@@ -210,6 +210,10 @@ interface ContainerFile {
 export const ProxmoxContainerManager: React.FC = () => {
   const [nodes, setNodes] = useState<string[]>([]);
   const [selectedNode, setSelectedNode] = useState<string>('');
+  const [proxmoxHost, setProxmoxHost] = useState<string>(localStorage.getItem('PROXMOX_HOST') || 'localhost');
+  const [proxmoxPort, setProxmoxPort] = useState<string>(localStorage.getItem('PROXMOX_PORT') || '8006');
+  const [proxmoxUser, setProxmoxUser] = useState<string>(localStorage.getItem('PROXMOX_USER') || 'root@pam');
+  const [proxmoxPass, setProxmoxPass] = useState<string>(localStorage.getItem('PROXMOX_PASS') || '');
   const [containers, setContainers] = useState<ProxmoxContainer[]>([]);
   const [selectedContainer, setSelectedContainer] = useState<ProxmoxContainer | null>(null);
   const [containerFiles, setContainerFiles] = useState<ContainerFile[]>([]);
@@ -219,6 +223,26 @@ export const ProxmoxContainerManager: React.FC = () => {
   useEffect(() => {
     loadNodes();
   }, []);
+
+  const saveProxmoxCredentials = async () => {
+    try {
+      await apiClient.storeCredential('proxmox', {
+        host: proxmoxHost,
+        port: proxmoxPort,
+        username: proxmoxUser,
+        password: proxmoxPass,
+      });
+      localStorage.setItem('PROXMOX_HOST', proxmoxHost);
+      localStorage.setItem('PROXMOX_PORT', proxmoxPort);
+      localStorage.setItem('PROXMOX_USER', proxmoxUser);
+      alert('Proxmox credentials saved to server');
+      // Optionally reload nodes
+      loadNodes();
+    } catch (err) {
+      console.error('Error saving proxmox credentials', err);
+      alert('Failed to save Proxmox credentials');
+    }
+  };
 
   useEffect(() => {
     if (selectedNode) {
@@ -306,6 +330,14 @@ export const ProxmoxContainerManager: React.FC = () => {
       <Header>
         🐳 Proxmox Container Manager
       </Header>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <input value={proxmoxHost} onChange={(e) => setProxmoxHost(e.target.value)} placeholder="host" />
+        <input value={proxmoxPort} onChange={(e) => setProxmoxPort(e.target.value)} placeholder="port" />
+        <input value={proxmoxUser} onChange={(e) => setProxmoxUser(e.target.value)} placeholder="username" />
+        <input value={proxmoxPass} onChange={(e) => setProxmoxPass(e.target.value)} placeholder="password" type="password" />
+        <button onClick={saveProxmoxCredentials} style={{ padding: '6px 10px' }}>Save</button>
+      </div>
 
       <NodeSelector
         value={selectedNode}

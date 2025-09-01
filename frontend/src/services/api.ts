@@ -446,6 +446,45 @@ class ApiClient {
     }
   }
 
+  // Proxmox container methods
+  async getProxmoxNodes(): Promise<string[]> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/nodes`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const data = await response.json();
+    return data.nodes || [];
+  }
+
+  async getContainers(node: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/${encodeURIComponent(node)}/lxc`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const data = await response.json();
+    return data.containers || [];
+  }
+
+  async startContainer(node: string, vmid: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/${encodeURIComponent(node)}/lxc/${vmid}/start`, { method: 'POST' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async stopContainer(node: string, vmid: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/${encodeURIComponent(node)}/lxc/${vmid}/stop`, { method: 'POST' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async restartContainer(node: string, vmid: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/${encodeURIComponent(node)}/lxc/${vmid}/restart`, { method: 'POST' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async listContainerFiles(node: string, vmid: number, path: string = '/') : Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/api/containers/${encodeURIComponent(node)}/lxc/${vmid}/files?path=${encodeURIComponent(path)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
   async executeN8NWorkflow(workflowId: string, data: Record<string, any> = {}): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/n8n/execute`, {
@@ -685,6 +724,46 @@ class ApiClient {
       console.error('Error authenticating with Git:', error);
       throw error;
     }
+  }
+
+  // Credentials methods
+  async storeCredential(name: string, data: Record<string, any>): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/credentials/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async getCredential(name: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/credentials/${encodeURIComponent(name)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async githubDeviceStart(clientId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/credentials/github/device/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
+  }
+
+  async githubDevicePoll(clientId: string, deviceCode: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/credentials/github/device/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, device_code: deviceCode }),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return await response.json();
   }
 
   async createGitRepository(name: string, description?: string, isPrivate?: boolean): Promise<any> {

@@ -44,6 +44,7 @@ try:
     from backend.integrations.proxmox import ProxmoxManager
     from backend.integrations.tool_discovery import ToolDiscoveryManager
     from backend.integrations.git import GitManager
+    from backend.api.credentials import router as credentials_router
 except ImportError:
     # Fallback for when running as script
     from agents import AgentManager
@@ -66,6 +67,7 @@ except ImportError:
     from integrations.proxmox import ProxmoxManager
     from integrations.tool_discovery import ToolDiscoveryManager
     from integrations.git import GitManager
+    from api.credentials import router as credentials_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -184,6 +186,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# include credentials router for server-backed credential storage
+app.include_router(credentials_router)
 
 
 def create_app() -> FastAPI:

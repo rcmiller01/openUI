@@ -29,10 +29,24 @@ export const N8NWorkflowManager: React.FC = () => {
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [n8nUrl, setN8nUrl] = useState<string>(localStorage.getItem('N8N_URL') || 'http://localhost:5678');
+  const [n8nToken, setN8nToken] = useState<string>(localStorage.getItem('N8N_TOKEN') || '');
 
   useEffect(() => {
     loadWorkflows();
   }, []);
+
+  const saveN8nCredentials = async () => {
+    try {
+      await apiClient.storeCredential('n8n', { url: n8nUrl, token: n8nToken });
+      localStorage.setItem('N8N_URL', n8nUrl);
+      alert('n8n credentials saved to server');
+      loadWorkflows();
+    } catch (err) {
+      console.error('Error saving n8n credentials', err);
+      alert('Failed to save n8n credentials');
+    }
+  };
 
   const loadWorkflows = async () => {
     setLoading(true);
@@ -124,13 +138,18 @@ export const N8NWorkflowManager: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
           🔄 n8n Workflow Manager
         </h2>
-        <button
-          onClick={loadWorkflows}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          disabled={loading}
-        >
-          {loading ? '🔄 Loading...' : '🔄 Refresh'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={n8nUrl} onChange={(e) => setN8nUrl(e.target.value)} placeholder="n8n url" />
+          <input value={n8nToken} onChange={(e) => setN8nToken(e.target.value)} placeholder="n8n token" />
+          <button onClick={saveN8nCredentials} className="px-4 py-2 bg-green-600 text-white rounded-md">Save</button>
+          <button
+            onClick={loadWorkflows}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            disabled={loading}
+          >
+            {loading ? '🔄 Loading...' : '🔄 Refresh'}
+          </button>
+        </div>
       </div>
 
       {error && (

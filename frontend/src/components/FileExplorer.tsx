@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@/store';
+import { useAppStore } from '../store';
 import apiClient, { FileInfo } from '../services/api';
 
 const ExplorerContainer = styled.div`

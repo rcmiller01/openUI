@@ -4,7 +4,6 @@ import { useAppStore } from '../store';
 import { ChatMessage } from '../store';
 import MessageBubble from './MessageBubble';
 import ModelSelector from './ModelSelector';
-import AgentStatusIndicator from './AgentStatusIndicator';
 import apiClient from '../services/api';
 
 const ChatContainer = styled.div`
@@ -21,6 +20,11 @@ const ChatHeader = styled.div`
   border-bottom: 1px solid ${props => props.theme.colors.border.primary};
   display: flex;
   justify-content: space-between;
+  align-items: center;
+`;
+
+const HeaderControls = styled.div`
+  display: flex;
   align-items: center;
 `;
 
@@ -147,10 +151,6 @@ export default function ChatPanel() {
     toggleChatPanel,
     addMessage,
     createConversation,
-    availableModels,
-    agents,
-    runAgent,
-    stopAgent
   } = useAppStore();
 
   const [inputValue, setInputValue] = useState('');
@@ -254,8 +254,9 @@ export default function ChatPanel() {
     <ChatContainer>
       <ChatHeader>
         <ChatTitle>AI Assistant</ChatTitle>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+  <HeaderControls>
           <AgentModeSelector
+            aria-label="Agent mode selector"
             value={agentMode}
             onChange={(e) => setAgentMode(e.target.value as any)}
           >
@@ -265,7 +266,7 @@ export default function ChatPanel() {
             <option value="plan">Plan Agent</option>
           </AgentModeSelector>
           <CloseButton onClick={toggleChatPanel}>✕</CloseButton>
-        </div>
+        </HeaderControls>
       </ChatHeader>
 
       <MessagesContainer>
@@ -286,7 +287,7 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
-      <InputContainer>
+  <InputContainer>
         <InputArea>
           <ModelSelector />
           <MessageInput
@@ -309,8 +310,7 @@ export default function ChatPanel() {
           </InputControls>
         </InputArea>
       </InputContainer>
-
-      <AgentStatusIndicator agents={agents} />
+      
     </ChatContainer>
   );
 }

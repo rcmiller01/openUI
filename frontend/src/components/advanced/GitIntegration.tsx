@@ -149,7 +149,7 @@ export const GitIntegration: React.FC = () => {
     
     setLoading(true);
     try {
-      const result = await apiClient.commitGitChanges(
+  const result = await apiClient.gitCommit(
         repositoryPath, 
         commitMessage, 
         selectedFiles.length > 0 ? selectedFiles : undefined
@@ -172,7 +172,7 @@ export const GitIntegration: React.FC = () => {
   const handlePush = async () => {
     setLoading(true);
     try {
-      const result = await apiClient.pushGitChanges(repositoryPath, remoteConfig.branch);
+  const result = await apiClient.gitPush(repositoryPath, remoteConfig.remote, remoteConfig.branch);
       if (result.success) {
         alert('Changes pushed successfully!');
         loadGitStatus();
@@ -189,7 +189,7 @@ export const GitIntegration: React.FC = () => {
   const handlePull = async () => {
     setLoading(true);
     try {
-      const result = await apiClient.pullGitChanges(repositoryPath, remoteConfig.branch);
+  const result = await apiClient.gitPull(repositoryPath, remoteConfig.remote, remoteConfig.branch);
       if (result.success) {
         alert('Changes pulled successfully!');
         loadGitStatus();

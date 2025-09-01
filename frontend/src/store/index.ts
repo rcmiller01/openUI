@@ -128,10 +128,10 @@ export const useAppStore = create<AppState>()(
       setAvailableModels: (models) => set({ availableModels: models }),
       toggleLocalMode: () => set((state) => ({ isLocalMode: !state.isLocalMode })),
       
-      // Chat Management
-      conversations: [],
-      activeConversationId: null,
-      isChatPanelOpen: false,
+  // Chat Management
+  conversations: [],
+  activeConversationId: null,
+  isChatPanelOpen: true,
       
       createConversation: (title = 'New Conversation') => {
         const id = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -204,8 +204,18 @@ export const useAppStore = create<AppState>()(
       },
       
       runAgent: (agentType, task) => {
-        // This will be implemented to communicate with the backend
+        // Call backend to run agent if available
         get().updateAgentStatus(agentType, { status: 'running', currentTask: task });
+        try {
+          // fire and forget; backend will emit status over websocket
+          const { apiClient } = require('../services/api');
+          apiClient.runAgent(agentType, task).catch((err: any) => {
+            console.error('Error running agent on backend:', err);
+            get().updateAgentStatus(agentType, { status: 'error', error: String(err) });
+          });
+        } catch (e) {
+          // if backend client not available, keep local status
+        }
       },
       
       stopAgent: (agentType) => {

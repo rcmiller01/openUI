@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useAppStore } from '@/store';
+import { useAppStore } from '../store';
 
 const SelectorContainer = styled.div`
   display: flex;

@@ -211,7 +211,8 @@ export default function ChatPanel() {
         }],
         model: selectedModel || undefined,
         context: {
-          conversation_id: activeConversationId
+          conversation_id: activeConversationId,
+          agent_mode: agentMode
         }
       });
       

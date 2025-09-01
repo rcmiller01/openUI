@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import { ToolDiscovery } from './ToolDiscovery';
 import { DebugPanel } from './DebugPanel';
 import { LSPIntegration } from './LSPIntegration';
@@ -6,6 +7,104 @@ import { N8NWorkflowManager } from './N8NWorkflowManager';
 import { GitIntegration } from './GitIntegration';
 import { AgentCoordination } from './AgentCoordination';
 import { ProxmoxContainerManager } from './ProxmoxContainerManager';
+
+const Container = styled.div`
+  width: 100%;
+  color: ${props => props.theme.colors.text.primary};
+  background: ${props => props.theme.colors.bg.secondary};
+  padding: 20px;
+  border-radius: 8px;
+`;
+
+const Header = styled.div`
+  margin-bottom: 16px;
+`;
+
+const Title = styled.h1`
+  font-size: 20px;
+  margin: 0 0 8px 0;
+  color: ${props => props.theme.colors.text.primary};
+`;
+
+const Subtitle = styled.p`
+  margin: 0;
+  color: ${props => props.theme.colors.text.muted};
+`;
+
+const Tabs = styled.nav`
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid ${props => props.theme.colors.border.primary};
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+`;
+
+const TabButton = styled.button<{active?: boolean}>`
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: ${props => props.active ? props.theme.colors.text.accent : props.theme.colors.text.secondary};
+  border-bottom: 2px solid ${props => props.active ? props.theme.colors.text.accent : 'transparent'};
+  cursor: pointer;
+`;
+
+const Content = styled.div`
+  margin-top: 12px;
+`;
+
+const QuickActions = styled.div`
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+`;
+
+const ActionCard = styled.button`
+  flex: 1;
+  background: ${props => props.theme.colors.bg.primary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  padding: 12px;
+  border-radius: 8px;
+  color: ${props => props.theme.colors.text.primary};
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const StatusGrid = styled.div`
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+`;
+
+const StatusCard = styled.div`
+  background: ${props => props.theme.colors.bg.primary};
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  color: ${props => props.theme.colors.text.primary};
+`;
+
+const ActionIcon = styled.div`
+  font-size: 18px;
+`;
+
+const ActionTitle = styled.div`
+  font-weight: 600;
+`;
+
+const ActionSubtitle = styled.div`
+  color: ${props => props.theme.colors.text.muted};
+  font-size: 12px;
+`;
+
+const StatusIcon = styled.div`
+  font-size: 20px;
+  margin-bottom: 6px;
+`;
 
 export const AdvancedToolsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('tools');
@@ -21,96 +120,62 @@ export const AdvancedToolsDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Advanced Tools Dashboard</h1>
-        <p className="text-gray-600 mt-2">
-          Manage enhanced capabilities including debugging, language servers, workflow automation, and agent coordination.
-        </p>
-      </div>
+    <Container>
+      <Header>
+        <Title>Advanced Tools Dashboard</Title>
+        <Subtitle>Manage enhanced capabilities including debugging, language servers, workflow automation, and agent coordination.</Subtitle>
+      </Header>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      <Tabs>
+        {tabs.map((tab) => (
+          <TabButton key={tab.id} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+          </TabButton>
+        ))}
+      </Tabs>
 
-      {/* Tab Content */}
-      <div className="transition-all duration-200 ease-in-out">
+      <Content>
         {tabs.find(tab => tab.id === activeTab)?.component}
-      </div>
+      </Content>
 
-      {/* Quick Actions */}
-      <div className="mt-8 bg-gray-50 p-6 rounded-lg">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => setActiveTab('tools')}
-            className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="text-2xl mb-2">🛠️</div>
-            <div className="font-medium text-gray-900">Discover Tools</div>
-            <div className="text-sm text-gray-600 mt-1">Explore available capabilities</div>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('debug')}
-            className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="text-2xl mb-2">🐛</div>
-            <div className="font-medium text-gray-900">Debug Code</div>
-            <div className="text-sm text-gray-600 mt-1">Start debugging sessions</div>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('containers')}
-            className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="text-2xl mb-2">�</div>
-            <div className="font-medium text-gray-900">Container Manager</div>
-            <div className="text-sm text-gray-600 mt-1">Manage Proxmox containers</div>
-          </button>
-        </div>
-      </div>
+      <QuickActions>
+        <ActionCard onClick={() => setActiveTab('tools')}>
+          <ActionIcon>🛠️</ActionIcon>
+          <ActionTitle>Discover Tools</ActionTitle>
+          <ActionSubtitle>Explore available capabilities</ActionSubtitle>
+        </ActionCard>
 
-      {/* System Status */}
-      <div className="mt-8 bg-blue-50 p-6 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">System Status</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-blue-200">
-            <div className="text-blue-600 font-bold text-xl">✅</div>
-            <div className="text-sm text-gray-600 mt-1">Backend Connected</div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-blue-200">
-            <div className="text-blue-600 font-bold text-xl">🔄</div>
-            <div className="text-sm text-gray-600 mt-1">Integrations Active</div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-blue-200">
-            <div className="text-blue-600 font-bold text-xl">🤖</div>
-            <div className="text-sm text-gray-600 mt-1">Agents Ready</div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-blue-200">
-            <div className="text-blue-600 font-bold text-xl">🔧</div>
-            <div className="text-sm text-gray-600 mt-1">Tools Available</div>
-          </div>
-        </div>
-      </div>
-    </div>
+        <ActionCard onClick={() => setActiveTab('debug')}>
+          <ActionIcon>🐛</ActionIcon>
+          <ActionTitle>Debug Code</ActionTitle>
+          <ActionSubtitle>Start debugging sessions</ActionSubtitle>
+        </ActionCard>
+
+        <ActionCard onClick={() => setActiveTab('containers')}>
+          <ActionIcon>🐳</ActionIcon>
+          <ActionTitle>Container Manager</ActionTitle>
+          <ActionSubtitle>Manage Proxmox containers</ActionSubtitle>
+        </ActionCard>
+      </QuickActions>
+
+      <StatusGrid>
+        <StatusCard>
+          <StatusIcon>✅</StatusIcon>
+          <div>Backend Connected</div>
+        </StatusCard>
+        <StatusCard>
+          <StatusIcon>🔄</StatusIcon>
+          <div>Integrations Active</div>
+        </StatusCard>
+        <StatusCard>
+          <StatusIcon>🤖</StatusIcon>
+          <div>Agents Ready</div>
+        </StatusCard>
+        <StatusCard>
+          <StatusIcon>🔧</StatusIcon>
+          <div>Tools Available</div>
+        </StatusCard>
+      </StatusGrid>
+    </Container>
   );
 };

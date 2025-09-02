@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class LLMManager:
     """Manages LLM integrations and routing"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.openrouter_client: httpx.AsyncClient | None = None
         self.ollama_client: httpx.AsyncClient | None = None
         self.available_models: list[LLMModel] = []
@@ -311,7 +311,7 @@ class LLMManager:
         model: str | None = None,
         stream: bool = False,
         context: dict[str, Any] | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> ChatResponse:
         """Handle chat completion request with automatic model routing"""
 

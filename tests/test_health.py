@@ -1,5 +1,5 @@
 import asyncio
-from backend.main import create_app, startup_for_tests, health_check
+from backend.main import startup_for_tests, health_check
 
 
 def test_health_direct_call():

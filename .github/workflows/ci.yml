@@ -35,28 +35,32 @@ jobs:
       - name: Cache node modules
         uses: actions/cache@v4
         with:
-          path: frontend/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
 
-      - name: Build frontend
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+      - name: Install Node deps (root)
+        run: npm ci
+
+      - name: Build frontend (vite from root)
+        run: npm run build
 
       - name: Install backend dependencies
         run: |
           pip install -U pip
           pip install -r backend/requirements.txt
       
-      - name: Run linting
+      - name: Quick lint (ruff E,F; ignore E501)
+        run: ruff check --select E,F --ignore E501 .
+
+      - name: Run linting (full)
         run: ruff check .
       
       - name: Check formatting
         run: black --check .
       
-      - name: Run type checks
-        run: mypy src
+      - name: Run type checks (critical modules)
+        run: |
+          mypy backend/integrations/llm.py backend/agents src/open_deep_coder src/math_ops.py --hide-error-context --pretty
       
       - name: Run tests
         run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov=backend --cov-report=xml

@@ -13,7 +13,7 @@ from typing import Iterable
 def _discover_modules(src_root: str = "src") -> Iterable[str]:
     root = Path(src_root)
     if not root.is_dir():
-        return []
+        return
     for py in root.rglob("*.py"):
         if py.name == "__init__.py":
             continue
@@ -42,4 +42,3 @@ def generate_smoke_tests(tests_dir: str = "tests") -> str:
 
     outfile.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return str(outfile)
-

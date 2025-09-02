@@ -4,10 +4,9 @@ Planner Output Template (YAML block).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import List, Dict
 from datetime import datetime
-import textwrap
 
 
 @dataclass
@@ -31,7 +30,7 @@ def _yaml_block(cycle: int, milestone: str, tasks: List[Task]) -> str:
         lines.append(f"    rationale: {t.rationale}")
         steps_inline = ", ".join(t.steps)
         lines.append(f"    steps: [{steps_inline}]")
-        lines.append(f"    acceptance:")
+        lines.append("    acceptance:")
         for k, v in t.acceptance.items():
             lines.append(f"      - {k}: {v}")
     return "\n".join(lines) + "\n"
@@ -75,4 +74,3 @@ def default_breakdown(prompt: str) -> List[Task]:
             acceptance={"tests": "pytest runs, smoke passes"},
         ),
     ]
-

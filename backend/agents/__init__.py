@@ -7,10 +7,9 @@ Coordinates the multi-agent workflow with specialized agents for different devel
 import asyncio
 import logging
 import os
-import sys
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 # Type-safe imports for mypy. At runtime we keep loose Any types to avoid import
 # complexity when running as a script.
@@ -207,7 +206,7 @@ class PlannerAgent(Agent):
             "commit change",
         ]
         try:
-            from src.open_deep_coder.planner import append_plan_md, Task  # type: ignore
+            from src.open_deep_coder.planner import append_plan_md, Task
             tasks = [
                 Task(
                     id="OD-PLAN",
@@ -306,7 +305,7 @@ class ImplementerAgent(Agent):
         """Generate tests for the code"""
         # Emit a smoke test to demonstrate post-codegen tests
         try:
-            from src.open_deep_coder.testgen import generate_smoke_tests  # type: ignore
+            from src.open_deep_coder.testgen import generate_smoke_tests
             path = generate_smoke_tests()
         except Exception:
             path = None
@@ -364,7 +363,10 @@ class VerifierAgent(Agent):
         return {"coverage": 85.2, "threshold": 70.0, "meets_threshold": True}
 
     async def _generate_report(
-        self, test_results, lint_results, coverage_results
+        self,
+        test_results: dict[str, Any],
+        lint_results: dict[str, Any],
+        coverage_results: dict[str, Any],
     ) -> dict[str, Any]:
         """Generate verification report"""
         return {
@@ -428,7 +430,7 @@ class ReviewerAgent(Agent):
         }
 
     async def _generate_final_review(
-        self, security_review, quality_review
+        self, security_review: dict[str, Any], quality_review: dict[str, Any]
     ) -> dict[str, Any]:
         """Generate final review report"""
         return {
@@ -493,7 +495,9 @@ class ResearcherAgent(Agent):
         """Find best practices for the task"""
         return {"best_practices": "Industry standard best practices identified"}
 
-    async def _compile_research_report(self, docs, best_practices) -> dict[str, Any]:
+    async def _compile_research_report(
+        self, docs: dict[str, Any], best_practices: dict[str, Any]
+    ) -> dict[str, Any]:
         """Compile research findings into a report"""
         return {
             "documentation": docs,
@@ -577,7 +581,7 @@ class AgentManager:
         # Don't await - let it run in background
         return task_id
 
-    async def stop_agent(self, agent_type: str):
+    async def stop_agent(self, agent_type: str) -> None:
         """Stop a specific agent"""
         try:
             agent_enum = AgentType(agent_type)
@@ -605,7 +609,7 @@ class AgentManager:
                 except asyncio.CancelledError:
                     pass
 
-    async def stop_all_agents(self):
+    async def stop_all_agents(self) -> None:
         """Stop all running agents"""
         for agent in self.agents.values():
             agent.update_status(AgentState.IDLE)

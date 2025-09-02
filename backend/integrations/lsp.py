@@ -11,19 +11,6 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-"""
-LSP Manager for Open-Deep-Coder
-
-Manages Language Server Protocol integrations for intelligent code completion,
-diagnostics, and other language features.
-"""
-
-import logging
-from typing import Any
-
-logger = logging.getLogger(__name__)
-
-
 class LSPManager:
     """Manages LSP server connections and requests"""
 

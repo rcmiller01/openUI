@@ -114,7 +114,7 @@ class EnhancedAgentCoordinator:
             "workflow_completed": [],
         }
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the enhanced coordination system"""
         logger.info("Initializing Enhanced Agent Coordinator...")
 
@@ -127,7 +127,7 @@ class EnhancedAgentCoordinator:
         self.is_initialized = True
         logger.info("Enhanced Agent Coordinator initialized")
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup coordination system"""
         if self._coordinator_task:
             self._coordinator_task.cancel()
@@ -389,7 +389,7 @@ class EnhancedAgentCoordinator:
         if event_type in self.event_callbacks:
             self.event_callbacks[event_type].append(callback)
 
-    async def _coordination_loop(self):
+    async def _coordination_loop(self) -> None:
         """Main coordination loop"""
         while True:
             try:
@@ -411,7 +411,7 @@ class EnhancedAgentCoordinator:
                 logger.error(f"Error in coordination loop: {e}")
                 await asyncio.sleep(5.0)
 
-    async def _process_task_queue(self):
+    async def _process_task_queue(self) -> None:
         """Process tasks from the queue"""
         try:
             while not self.task_queue.empty():
@@ -420,7 +420,7 @@ class EnhancedAgentCoordinator:
         except TimeoutError:
             pass  # No tasks in queue
 
-    async def _assign_task(self, task_id: str):
+    async def _assign_task(self, task_id: str) -> None:
         """Assign a task to the most suitable agent"""
         if task_id not in self.tasks:
             return
@@ -516,13 +516,13 @@ class EnhancedAgentCoordinator:
 
         return best_agent or agents[0]
 
-    async def _check_task_completion(self):
+    async def _check_task_completion(self) -> None:
         """Check for completed tasks and update statuses"""
         # This would integrate with actual agent execution
         # For now, simulate some task completions
         pass
 
-    async def _update_workflow_statuses(self):
+    async def _update_workflow_statuses(self) -> None:
         """Update workflow statuses based on task completions"""
         for workflow in self.workflows.values():
             task_statuses = [task.status for task in workflow.tasks]
@@ -535,12 +535,12 @@ class EnhancedAgentCoordinator:
                         "workflow_completed", {"workflow_id": workflow.id}
                     )
 
-    async def _balance_agent_load(self):
+    async def _balance_agent_load(self) -> None:
         """Balance load across agents if needed"""
         # Advanced load balancing logic would go here
         pass
 
-    async def _performance_monitor(self):
+    async def _performance_monitor(self) -> None:
         """Monitor agent performance"""
         while True:
             try:
@@ -580,7 +580,7 @@ class EnhancedAgentCoordinator:
                 logger.error(f"Error in performance monitor: {e}")
                 await asyncio.sleep(30.0)
 
-    async def _trigger_event(self, event_type: str, data: dict[str, Any]):
+    async def _trigger_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Trigger event callbacks"""
         if event_type in self.event_callbacks:
             for callback in self.event_callbacks[event_type]:

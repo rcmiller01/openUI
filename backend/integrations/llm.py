@@ -41,7 +41,7 @@ class LLMManager:
             "chat": ["gpt-3.5-turbo", "claude-3-haiku", "llama2:7b"],
         }
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize LLM clients and discover available models"""
         logger.info("Initializing LLM Manager...")
 
@@ -124,7 +124,7 @@ class LLMManager:
         except Exception:
             return default
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup HTTP clients"""
         if self.openrouter_client:
             await self.openrouter_client.aclose()
@@ -135,7 +135,7 @@ class LLMManager:
         """Check if the manager is ready to handle requests"""
         return self.is_initialized and len(self.available_models) > 0
 
-    async def _discover_models(self):
+    async def _discover_models(self) -> None:
         """Discover available models from all providers"""
         models = []
 
@@ -229,13 +229,23 @@ class LLMManager:
         return self.available_models
 
     def classify_request(
-        self, messages: list[ChatMessage], context: dict[str, Any] | None = None
+        self, messages: list[Any], context: dict[str, Any] | None = None
     ) -> str:
-        """Classify the request type for optimal model routing"""
+        """Classify the request type for optimal model routing
+
+        Accepts ChatMessage objects or plain dicts and falls back to stringifying
+        unknown formats.
+        """
         if not messages:
             return "chat"
 
-        last_message = messages[-1].content.lower()
+        last = messages[-1]
+        if isinstance(last, ChatMessage):
+            last_message = last.content.lower()
+        elif isinstance(last, dict):
+            last_message = str(last.get("content", "")).lower()
+        else:
+            last_message = str(last).lower()
 
         # Simple keyword-based classification (can be enhanced with ML)
         if any(
@@ -297,7 +307,7 @@ class LLMManager:
 
     async def chat_completion(
         self,
-        messages: list[ChatMessage],
+        messages: list[Any],
         model: str | None = None,
         stream: bool = False,
         context: dict[str, Any] | None = None,
@@ -305,9 +315,28 @@ class LLMManager:
     ) -> ChatResponse:
         """Handle chat completion request with automatic model routing"""
 
+        # Normalize messages: accept either ChatMessage objects or plain dicts
+        normalized_messages: list[ChatMessage] = []
+        for msg in messages:
+            if isinstance(msg, ChatMessage):
+                normalized_messages.append(msg)
+            elif isinstance(msg, dict):
+                normalized_messages.append(
+                    ChatMessage(
+                        role=msg.get("role", "user"),
+                        content=msg.get("content", ""),
+                        timestamp=datetime.now(),
+                        model=msg.get("model"),
+                    )
+                )
+            else:
+                normalized_messages.append(
+                    ChatMessage(role="user", content=str(msg), timestamp=datetime.now())
+                )
+
         # Auto-select model if not specified
         if not model:
-            task_type = self.classify_request(messages, context)
+            task_type = self.classify_request(normalized_messages, context)
             prefer_local = context.get("prefer_local", False) if context else False
             model = self.select_optimal_model(task_type, prefer_local)
 
@@ -322,10 +351,12 @@ class LLMManager:
         # Route to appropriate provider
         if model_info.provider == "openrouter":
             return await self._openrouter_chat_completion(
-                messages, model, stream, **kwargs
+                normalized_messages, model, stream, **kwargs
             )
         elif model_info.provider == "ollama":
-            return await self._ollama_chat_completion(messages, model, stream, **kwargs)
+            return await self._ollama_chat_completion(
+                normalized_messages, model, stream, **kwargs
+            )
         else:
             raise ValueError(f"Unsupported provider: {model_info.provider}")
 

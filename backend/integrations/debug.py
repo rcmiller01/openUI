@@ -124,7 +124,7 @@ class DebugManager:
             },
         }
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize debug manager and check available debuggers"""
         logger.info("Initializing Debug Manager...")
 
@@ -158,7 +158,6 @@ class DebugManager:
                     if result.returncode == 0:
                         available_adapters.append(language)
                         logger.info(f"Found debug adapter for {language}")
-
             except Exception as e:
                 logger.debug(f"Debug adapter for {language} not available: {e}")
 
@@ -167,7 +166,7 @@ class DebugManager:
             f"Debug Manager initialized with {len(available_adapters)} adapters"
         )
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup all debug sessions"""
         for session_id in list(self.sessions.keys()):
             await self.stop_debug_session(session_id)
@@ -183,7 +182,6 @@ class DebugManager:
 
         adapter_config = self._adapter_configs[language]
         session_id = self._get_next_session_id()
-
         try:
             # Create debug session
             session = DebugSession(
@@ -224,7 +222,8 @@ class DebugManager:
             if session.process:
                 # Send terminate signal
                 session.process.terminate()
-                await session.process.wait()
+                # session.process.wait() is synchronous for subprocess.Popen
+                session.process.wait()
                 session.process = None
 
             session.state = DebugState.TERMINATED
@@ -439,7 +438,7 @@ class DebugManager:
 
     async def _start_adapter_process(
         self, session: DebugSession, config: dict[str, Any]
-    ):
+    ) -> None:
         """Start the debug adapter process"""
         # For now, create a placeholder process
         # Real implementation would start the actual debug adapter
@@ -448,7 +447,7 @@ class DebugManager:
 
     async def _send_set_breakpoints_request(
         self, session: DebugSession, file_path: str
-    ):
+    ) -> None:
         """Send setBreakpoints request to debug adapter"""
         # DAP protocol implementation would go here
         breakpoints_for_file = [
@@ -458,19 +457,19 @@ class DebugManager:
         ]
         logger.debug(f"Setting {len(breakpoints_for_file)} breakpoints for {file_path}")
 
-    async def _send_continue_request(self, session: DebugSession):
+    async def _send_continue_request(self, session: DebugSession) -> None:
         """Send continue request to debug adapter"""
         logger.debug(f"Sending continue request for session {session.id}")
 
-    async def _send_step_over_request(self, session: DebugSession):
+    async def _send_step_over_request(self, session: DebugSession) -> None:
         """Send step over request to debug adapter"""
         logger.debug(f"Sending step over request for session {session.id}")
 
-    async def _send_step_into_request(self, session: DebugSession):
+    async def _send_step_into_request(self, session: DebugSession) -> None:
         """Send step into request to debug adapter"""
         logger.debug(f"Sending step into request for session {session.id}")
 
-    async def _send_step_out_request(self, session: DebugSession):
+    async def _send_step_out_request(self, session: DebugSession) -> None:
         """Send step out request to debug adapter"""
         logger.debug(f"Sending step out request for session {session.id}")
 

@@ -57,7 +57,9 @@ class LSPServer:
     working_directory: str
     state: LSPServerState
     capabilities: LSPCapabilities
-    process: subprocess.Popen | None = None
+    # Process may be either a blocking subprocess.Popen or an asyncio Process;
+    # relax typing to Any to avoid assignment incompatibilities.
+    process: Any = None
     stdin_queue: asyncio.Queue | None = None
     stdout_queue: asyncio.Queue | None = None
 
@@ -133,7 +135,7 @@ class LSPManager:
             },
         }
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize LSP manager and discover available language servers"""
         logger.info("Initializing Enhanced LSP Manager...")
 
@@ -145,13 +147,13 @@ class LSPManager:
             f"LSP Manager initialized with {len(self.servers)} server configurations"
         )
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup all LSP server connections"""
         for server_id in list(self.servers.keys()):
             await self.stop_server(server_id)
         self.servers.clear()
 
-    async def _detect_available_servers(self):
+    async def _detect_available_servers(self) -> None:
         """Detect which language servers are available on the system"""
         for language, config in self._server_configs.items():
             try:
@@ -227,7 +229,7 @@ class LSPManager:
             server.state = LSPServerState.ERROR
             return None
 
-    async def stop_server(self, server_id: str):
+    async def stop_server(self, server_id: str) -> None:
         """Stop a specific LSP server"""
         if server_id not in self.servers:
             return
@@ -382,12 +384,12 @@ class LSPManager:
         self._next_request_id += 1
         return request_id
 
-    async def _send_request(self, server: LSPServer, request: dict[str, Any]):
+    async def _send_request(self, server: LSPServer, request: dict[str, Any]) -> None:
         """Send a request to the LSP server"""
         if server.stdin_queue:
             await server.stdin_queue.put(request)
 
-    async def _send_initialize_request(self, server: LSPServer, workspace_path: str):
+    async def _send_initialize_request(self, server: LSPServer, workspace_path: str) -> None:
         """Send initialization request to LSP server"""
         request_id = self._get_next_request_id()
         request = {
@@ -438,7 +440,7 @@ class LSPManager:
         finally:
             self._pending_requests.pop(request_id, None)
 
-    async def _send_shutdown_request(self, server: LSPServer):
+    async def _send_shutdown_request(self, server: LSPServer) -> None:
         """Send shutdown request to LSP server"""
         request_id = self._get_next_request_id()
         request = {
@@ -462,7 +464,7 @@ class LSPManager:
         finally:
             self._pending_requests.pop(request_id, None)
 
-    async def _handle_server_stdout(self, server: LSPServer):
+    async def _handle_server_stdout(self, server: LSPServer) -> None:
         """Handle stdout from LSP server"""
         if not server.process or not server.process.stdout:
             return
@@ -511,7 +513,7 @@ class LSPManager:
         except Exception as e:
             logger.error(f"Error handling server stdout: {e}")
 
-    async def _handle_server_stdin(self, server: LSPServer):
+    async def _handle_server_stdin(self, server: LSPServer) -> None:
         """Handle stdin to LSP server"""
         if not server.process or not server.process.stdin or not server.stdin_queue:
             return
@@ -530,7 +532,7 @@ class LSPManager:
         except Exception as e:
             logger.error(f"Error handling server stdin: {e}")
 
-    async def _handle_server_message(self, message: dict[str, Any]):
+    async def _handle_server_message(self, message: dict[str, Any]) -> None:
         """Handle incoming message from LSP server"""
         if "id" in message and message["id"] in self._pending_requests:
             # Response to a request
@@ -550,7 +552,7 @@ class LSPManager:
         else:
             logger.debug(f"Unhandled LSP message: {message}")
 
-    async def _handle_diagnostics(self, params: dict[str, Any]):
+    async def _handle_diagnostics(self, params: dict[str, Any]) -> None:
         """Handle diagnostic notifications from LSP server"""
         uri = params.get("uri", "")
         diagnostics = params.get("diagnostics", [])

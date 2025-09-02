@@ -10,26 +10,17 @@ import os
 import sys
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, TYPE_CHECKING
 
-# Add parent directories to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
-
-try:
+# Type-safe imports for mypy. At runtime we keep loose Any types to avoid import
+# complexity when running as a script.
+if TYPE_CHECKING:
     from backend.api.models import AgentStatus, TaskResult
     from backend.integrations.llm import LLMManager
-except ImportError:
-    try:
-        from api.models import AgentStatus, TaskResult
-        from integrations.llm import LLMManager
-    except ImportError:
-        # Minimal fallback
-        LLMManager = None
-        AgentStatus = None
-        TaskResult = None
+else:
+    AgentStatus = Any  # type: ignore
+    TaskResult = Any  # type: ignore
+    LLMManager = Any  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +63,8 @@ class Agent:
         raise NotImplementedError
 
     def update_status(
-        self, status: AgentState, progress: float = None, error: str = None
-    ):
+        self, status: AgentState, progress: float | None = None, error: str | None = None
+    ) -> None:
         """Update agent status"""
         self.status = status
         if progress is not None:
@@ -121,7 +112,11 @@ class OrchestratorAgent(Agent):
         messages = [
             {
                 "role": "system",
-                "content": "You are an orchestrator agent that creates execution plans for development tasks. Break down the task into steps for different specialized agents: planner, implementer, verifier, reviewer, researcher.",
+                "content": (
+                    "You are an orchestrator agent that creates execution plans. "
+                    "Break the task into steps for specialized agents: planner, "
+                    "implementer, verifier, reviewer, researcher."
+                ),
             },
             {"role": "user", "content": f"Create an execution plan for: {task}"},
         ]
@@ -186,7 +181,11 @@ class PlannerAgent(Agent):
         messages = [
             {
                 "role": "system",
-                "content": "You are a planner agent that analyzes development tasks. Break down requirements, identify dependencies, and assess complexity.",
+                "content": (
+                    "You are a planner agent that analyzes development tasks. "
+                    "Break down requirements, identify dependencies, and assess "
+                    "complexity."
+                ),
             },
             {"role": "user", "content": f"Analyze this task: {task}"},
         ]
@@ -480,11 +479,11 @@ class AgentManager:
         }
         self.running_tasks: dict[str, asyncio.Task] = {}
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the agent manager"""
         logger.info("Agent Manager initialized with all agents ready")
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup running tasks"""
         for _task_id, task in self.running_tasks.items():
             if not task.done():

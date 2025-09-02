@@ -8,15 +8,14 @@ Handles LLM integration, agent coordination, and development tools.
 import logging
 import os
 import sys
-import asyncio
-from contextlib import asynccontextmanager
 
-# Add parent directory to path for imports
+# Add parent directory to path for imports (do this early so local imports work)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Load environment variables from .env file
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Any
 from dotenv import load_dotenv
-load_dotenv()
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -68,6 +67,9 @@ except ImportError:
     from integrations.tool_discovery import ToolDiscoveryManager
     from integrations.git import GitManager
     from api.credentials import router as credentials_router
+
+# Now load environment variables (after imports)
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -242,13 +244,18 @@ frontend_dist = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"
 )
 if os.path.isdir(frontend_dist):
-    # Mount static assets under /static to avoid shadowing API routes like /health
-    app.mount("/static", StaticFiles(directory=frontend_dist, html=True), name="frontend_static")
+    # Mount static assets under /static to avoid shadowing API routes
+    # like /health
+    app.mount(
+        "/static",
+        StaticFiles(directory=frontend_dist, html=True),
+        name="frontend_static",
+    )
 
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict:
     """Health check endpoint"""
     return {
         "status": "healthy",
@@ -280,7 +287,7 @@ async def health_check():
 
 # LLM endpoints
 @app.get("/api/models", response_model=list[LLMModel])
-async def get_available_models():
+async def get_available_models() -> list[LLMModel]:
     """Get available LLM models"""
     if not llm_manager:
         raise HTTPException(status_code=500, detail="LLM manager not initialized")
@@ -289,7 +296,7 @@ async def get_available_models():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat_completion(request: ChatRequest):
+async def chat_completion(request: ChatRequest) -> ChatResponse:
     """Handle chat completion request"""
     if not llm_manager:
         raise HTTPException(status_code=500, detail="LLM manager not initialized")
@@ -309,7 +316,7 @@ async def chat_completion(request: ChatRequest):
 
 # Agent endpoints
 @app.get("/api/agents/status", response_model=list[AgentStatus])
-async def get_agent_status():
+async def get_agent_status() -> list[AgentStatus]:
     """Get status of all agents"""
     if not agent_manager:
         raise HTTPException(status_code=500, detail="Agent manager not initialized")
@@ -318,7 +325,7 @@ async def get_agent_status():
 
 
 @app.post("/api/agents/{agent_type}/run")
-async def run_agent(agent_type: str, request: TaskRequest):
+async def run_agent(agent_type: str, request: TaskRequest) -> dict:
     """Run a specific agent with a task"""
     if not agent_manager:
         raise HTTPException(status_code=500, detail="Agent manager not initialized")
@@ -334,7 +341,7 @@ async def run_agent(agent_type: str, request: TaskRequest):
 
 
 @app.post("/api/agents/{agent_type}/stop")
-async def stop_agent(agent_type: str):
+async def stop_agent(agent_type: str) -> dict:
     """Stop a specific agent"""
     if not agent_manager:
         raise HTTPException(status_code=500, detail="Agent manager not initialized")
@@ -348,7 +355,7 @@ async def stop_agent(agent_type: str):
 
 
 @app.post("/api/agents/stop-all")
-async def stop_all_agents():
+async def stop_all_agents() -> dict:
     """Stop all running agents"""
     if not agent_manager:
         raise HTTPException(status_code=500, detail="Agent manager not initialized")
@@ -414,7 +421,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 # File system endpoints
 @app.get("/api/files")
-async def list_files(path: str = "."):
+async def list_files(path: str = ".") -> dict:
     """List files and directories in a path"""
     import os
     from datetime import datetime
@@ -442,23 +449,50 @@ async def list_files(path: str = "."):
                 )
             )
 
-        return items
-    except Exception as e:
-        logger.error(f"Error listing files: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@app.get("/api/files/content")
-async def get_file_content(path: str):
-    """Get file content"""
-    import os
-    from datetime import datetime
-
-    try:
-        abs_path = os.path.abspath(path)
-        if not os.path.exists(abs_path) or os.path.isdir(abs_path):
-            raise HTTPException(status_code=404, detail="File not found")
-
+        return {
+            "status": "healthy",
+            "version": "0.1.0",
+            "services": {
+                "llm_manager": (
+                    llm_manager is not None and llm_manager.is_ready()
+                ),
+                "agent_manager": (
+                    agent_manager is not None
+                    and agent_manager.is_ready()
+                ),
+                "lsp_manager": (
+                    lsp_manager is not None and lsp_manager.is_initialized
+                ),
+                "mcp_manager": (
+                    mcp_manager is not None
+                    and mcp_manager.is_initialized
+                ),
+                "n8n_manager": (
+                    n8n_manager is not None
+                    and n8n_manager.is_initialized
+                ),
+                "proxmox_manager": (
+                    proxmox_manager is not None
+                    and proxmox_manager.is_initialized
+                ),
+                "debug_manager": (
+                    debug_manager is not None
+                    and debug_manager.is_initialized
+                ),
+                "coordinator": (
+                    coordinator is not None
+                    and coordinator.is_initialized
+                ),
+                "tool_discovery": (
+                    tool_discovery is not None
+                    and tool_discovery.is_initialized
+                ),
+                "git_manager": (
+                    git_manager is not None
+                    and git_manager.is_ready()
+                ),
+            },
+        }
         with open(abs_path, encoding="utf-8") as f:
             content = f.read()
 
@@ -479,7 +513,7 @@ async def get_file_content(path: str):
 
 
 @app.post("/api/files/content")
-async def save_file_content(operation: FileOperation):
+async def save_file_content(operation: FileOperation) -> dict:
     """Save file content"""
     import os
 
@@ -512,7 +546,7 @@ async def save_file_content(operation: FileOperation):
 
 # Enhanced LSP endpoints
 @app.get("/api/lsp/servers")
-async def get_lsp_servers():
+async def get_lsp_servers() -> Any:
     """Get status of all LSP servers"""
     if not lsp_manager:
         raise HTTPException(status_code=500, detail="LSP manager not initialized")
@@ -554,7 +588,7 @@ async def get_hover_info(request: dict) -> dict:
 
 # MCP endpoints
 @app.get("/api/mcp/servers")
-async def get_mcp_servers():
+async def get_mcp_servers() -> Any:
     """Get status of all MCP servers"""
     if not mcp_manager:
         raise HTTPException(status_code=500, detail="MCP manager not initialized")
@@ -563,7 +597,7 @@ async def get_mcp_servers():
 
 
 @app.get("/api/mcp/tools")
-async def get_mcp_tools():
+async def get_mcp_tools() -> Any:
     """Get available MCP tools"""
     if not mcp_manager:
         raise HTTPException(status_code=500, detail="MCP manager not initialized")
@@ -589,7 +623,7 @@ async def invoke_mcp_tool(request: dict) -> dict:
 
 # n8n endpoints
 @app.get("/api/n8n/workflows")
-async def get_n8n_workflows():
+async def get_n8n_workflows() -> Any:
     """Get n8n workflow status"""
     if not n8n_manager:
         raise HTTPException(status_code=500, detail="n8n manager not initialized")
@@ -713,7 +747,7 @@ async def invoke_tool(request: dict):
         return result
     except Exception as e:
         logger.error(f"Error invoking tool: {e}")
-    raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/tools/analytics")
@@ -879,7 +913,7 @@ async def setup_git_automation(request: dict):
         }
     except Exception as e:
         logger.error(f"Error setting up git automation: {e}")
-    raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Git endpoints

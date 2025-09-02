@@ -5,8 +5,7 @@ Handles Git repository operations including authentication, cloning, committing,
 """
 
 import os
-import subprocess
-import json
+# subprocess and json are not used; removed to satisfy linter
 import asyncio
 from typing import Dict, List, Optional, Any
 from pathlib import Path
@@ -25,7 +24,7 @@ class GitManager:
         self.email: Optional[str] = None
         self.is_initialized = False
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize Git manager"""
         logger.info("Initializing Git Manager...")
         self.is_initialized = True
@@ -43,12 +42,21 @@ class GitManager:
             self.email = email
 
             # Test authentication by trying to access user info
-            result = await self._run_git_command(["config", "--global", "user.name", username])
+            result = await self._run_git_command(
+                ["config", "--global", "user.name", username]
+            )
             if result["success"]:
-                await self._run_git_command(["config", "--global", "user.email", email])
+                await self._run_git_command(
+                    ["config", "--global", "user.email", email]
+                )
                 self.authenticated = True
-                logger.info(f"Git authentication successful for user: {username}")
-                return {"success": True, "message": "Authentication successful"}
+                logger.info(
+                    f"Git authentication successful for user: {username}"
+                )
+                return {
+                    "success": True,
+                    "message": "Authentication successful",
+                }
             else:
                 return {"success": False, "message": "Authentication failed"}
 
@@ -56,7 +64,9 @@ class GitManager:
             logger.error(f"Git authentication error: {e}")
             return {"success": False, "message": str(e)}
 
-    async def create_repository(self, name: str, description: str = "", private: bool = False) -> Dict[str, Any]:
+    async def create_repository(
+        self, name: str, description: str = "", private: bool = False
+    ) -> Dict[str, Any]:
         """Create a new repository on GitHub"""
         if not self.authenticated or not self.token:
             return {"success": False, "message": "Not authenticated"}
@@ -90,7 +100,10 @@ class GitManager:
                         }
                     }
                 else:
-                    return {"success": False, "message": f"Failed to create repository: {response.text}"}
+                    return {
+                        "success": False,
+                        "message": f"Failed to create repository: {response.text}",
+                    }
 
         except Exception as e:
             logger.error(f"Error creating repository: {e}")
@@ -105,13 +118,21 @@ class GitManager:
             # Clone the repository
             if self.token and self.username:
                 # Use token authentication for HTTPS URLs
-                auth_url = repo_url.replace("https://", f"https://{self.username}:{self.token}@")
-                result = await self._run_git_command(["clone", auth_url, local_path])
+                auth_url = repo_url.replace(
+                    "https://", f"https://{self.username}:{self.token}@"
+                )
+                result = await self._run_git_command(
+                    ["clone", auth_url, local_path]
+                )
             else:
                 result = await self._run_git_command(["clone", repo_url, local_path])
 
             if result["success"]:
-                return {"success": True, "message": "Repository cloned successfully", "path": local_path}
+                return {
+                    "success": True,
+                    "message": "Repository cloned successfully",
+                    "path": local_path,
+                }
             else:
                 return {"success": False, "message": result["error"]}
 
@@ -119,7 +140,9 @@ class GitManager:
             logger.error(f"Error cloning repository: {e}")
             return {"success": False, "message": str(e)}
 
-    async def init_repository(self, local_path: str, repo_name: str) -> Dict[str, Any]:
+    async def init_repository(
+        self, local_path: str, repo_name: str
+    ) -> Dict[str, Any]:
         """Initialize a new local repository and optionally create remote"""
         try:
             # Initialize git repository
@@ -129,7 +152,9 @@ class GitManager:
 
             # Create initial commit
             await self._run_git_command(["add", "."], cwd=local_path)
-            await self._run_git_command(["commit", "-m", "Initial commit"], cwd=local_path)
+            await self._run_git_command(
+                ["commit", "-m", "Initial commit"], cwd=local_path
+            )
 
             # Create remote repository if authenticated
             if self.authenticated:
@@ -138,10 +163,17 @@ class GitManager:
                     # Add remote
                     remote_url = create_result["repository"]["clone_url"]
                     if self.token and self.username:
-                        remote_url = remote_url.replace("https://", f"https://{self.username}:{self.token}@")
+                        remote_url = remote_url.replace(
+                            "https://",
+                            f"https://{self.username}:{self.token}@",
+                        )
 
-                    await self._run_git_command(["remote", "add", "origin", remote_url], cwd=local_path)
-                    await self._run_git_command(["push", "-u", "origin", "main"], cwd=local_path)
+                    await self._run_git_command(
+                        ["remote", "add", "origin", remote_url], cwd=local_path
+                    )
+                    await self._run_git_command(
+                        ["push", "-u", "origin", "main"], cwd=local_path
+                    )
 
                     return {
                         "success": True,
@@ -160,15 +192,37 @@ class GitManager:
         try:
             result = await self._run_git_command(["status", "--porcelain"], cwd=repo_path)
             if result["success"]:
-                lines = result["output"].strip().split('\n') if result["output"].strip() else []
+                lines = (
+                    result["output"].strip().split("\n")
+                    if result["output"].strip()
+                    else []
+                )
                 return {
                     "success": True,
                     "status": {
-                        "modified": [line[3:] for line in lines if line.startswith(' M ') or line.startswith('M ')],
-                        "added": [line[3:] for line in lines if line.startswith('A ') or line.startswith(' A')],
-                        "deleted": [line[3:] for line in lines if line.startswith('D ') or line.startswith(' D')],
-                        "untracked": [line[3:] for line in lines if line.startswith('?? ')],
-                        "staged": [line[3:] for line in lines if line.startswith('A ') or line.startswith('M ') or line.startswith('D ')]
+                        "modified": [
+                            line[3:]
+                            for line in lines
+                            if line.startswith(" M ") or line.startswith("M ")
+                        ],
+                        "added": [
+                            line[3:]
+                            for line in lines
+                            if line.startswith("A ") or line.startswith(" A")
+                        ],
+                        "deleted": [
+                            line[3:]
+                            for line in lines
+                            if line.startswith("D ") or line.startswith(" D")
+                        ],
+                        "untracked": [line[3:] for line in lines if line.startswith("?? ")],
+                        "staged": [
+                            line[3:]
+                            for line in lines
+                            if line.startswith("A ")
+                            or line.startswith("M ")
+                            or line.startswith("D ")
+                        ],
                     }
                 }
             else:
@@ -178,7 +232,9 @@ class GitManager:
             logger.error(f"Error getting git status: {e}")
             return {"success": False, "message": str(e)}
 
-    async def commit_changes(self, repo_path: str, message: str, files: List[str] = None) -> Dict[str, Any]:
+    async def commit_changes(
+        self, repo_path: str, message: str, files: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """Commit changes to repository"""
         try:
             # Add files
@@ -189,9 +245,14 @@ class GitManager:
                 await self._run_git_command(["add", "."], cwd=repo_path)
 
             # Commit
-            result = await self._run_git_command(["commit", "-m", message], cwd=repo_path)
+            result = await self._run_git_command(
+                ["commit", "-m", message], cwd=repo_path
+            )
             if result["success"]:
-                return {"success": True, "message": "Changes committed successfully"}
+                return {
+                    "success": True,
+                    "message": "Changes committed successfully",
+                }
             else:
                 return {"success": False, "message": result["error"]}
 
@@ -199,12 +260,19 @@ class GitManager:
             logger.error(f"Error committing changes: {e}")
             return {"success": False, "message": str(e)}
 
-    async def push_changes(self, repo_path: str, branch: str = "main") -> Dict[str, Any]:
+    async def push_changes(
+        self, repo_path: str, branch: str = "main"
+    ) -> Dict[str, Any]:
         """Push changes to remote repository"""
         try:
-            result = await self._run_git_command(["push", "origin", branch], cwd=repo_path)
+            result = await self._run_git_command(
+                ["push", "origin", branch], cwd=repo_path
+            )
             if result["success"]:
-                return {"success": True, "message": "Changes pushed successfully"}
+                return {
+                    "success": True,
+                    "message": "Changes pushed successfully",
+                }
             else:
                 return {"success": False, "message": result["error"]}
 
@@ -212,12 +280,20 @@ class GitManager:
             logger.error(f"Error pushing changes: {e}")
             return {"success": False, "message": str(e)}
 
-    async def pull_changes(self, repo_path: str, branch: str = "main") -> Dict[str, Any]:
+    async def pull_changes(
+        self, repo_path: str, branch: str = "main"
+    ) -> Dict[str, Any]:
         """Pull changes from remote repository"""
         try:
-            result = await self._run_git_command(["pull", "origin", branch], cwd=repo_path)
+            result = await self._run_git_command(
+                ["pull", "origin", branch], cwd=repo_path
+            )
             if result["success"]:
-                return {"success": True, "message": "Changes pulled successfully"}
+                return {
+                    "success": True,
+                    "message": "Changes pulled successfully",
+                }
+
             else:
                 return {"success": False, "message": result["error"]}
 
@@ -225,7 +301,9 @@ class GitManager:
             logger.error(f"Error pulling changes: {e}")
             return {"success": False, "message": str(e)}
 
-    async def _run_git_command(self, args: List[str], cwd: str = None) -> Dict[str, Any]:
+    async def _run_git_command(
+        self, args: List[str], cwd: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Run a git command and return result"""
         try:
             env = os.environ.copy()
@@ -235,11 +313,12 @@ class GitManager:
                 env["GIT_PASSWORD"] = self.token
 
             process = await asyncio.create_subprocess_exec(
-                "git", *args,
+                "git",
+                *args,
                 cwd=cwd,
                 env=env,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate()

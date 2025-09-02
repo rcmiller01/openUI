@@ -92,7 +92,7 @@ class MCPManager:
             },
         }
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize MCP manager and discover available servers"""
         logger.info("Initializing MCP Manager...")
 
@@ -102,7 +102,7 @@ class MCPManager:
         self.is_initialized = True
         logger.info(f"MCP Manager initialized with {len(self.servers)} servers")
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup MCP connections"""
         for server_id in list(self.servers.keys()):
             await self.disconnect_server(server_id)

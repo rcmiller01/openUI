@@ -11,19 +11,32 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+"""
+LSP Manager for Open-Deep-Coder
+
+Manages Language Server Protocol integrations for intelligent code completion,
+diagnostics, and other language features.
+"""
+
+import logging
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
 class LSPManager:
     """Manages LSP server connections and requests"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.servers: dict[str, Any] = {}
         self.is_initialized = False
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize LSP manager"""
         logger.info("LSP Manager initialized")
         self.is_initialized = True
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup LSP connections"""
         for server in self.servers.values():
             # TODO: Properly close LSP connections

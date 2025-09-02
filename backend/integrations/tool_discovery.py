@@ -36,12 +36,12 @@ class Tool:
 class ToolDiscoveryManager:
     """Manages discovery and registration of tools from various sources"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tools: dict[str, Tool] = {}
         self.providers: dict[str, Any] = {}
         self.is_initialized = False
 
-    async def initialize(self, integrations: dict[str, Any]):
+    async def initialize(self, integrations: dict[str, Any]) -> None:
         """Initialize tool discovery with integration managers"""
         logger.info("Initializing Tool Discovery Manager...")
 
@@ -51,7 +51,7 @@ class ToolDiscoveryManager:
         self.is_initialized = True
         logger.info(f"Tool Discovery Manager initialized with {len(self.tools)} tools")
 
-    async def _discover_all_tools(self):
+    async def _discover_all_tools(self) -> None:
         """Discover tools from all sources"""
         # LSP Tools
         if "lsp" in self.providers:

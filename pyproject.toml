@@ -130,10 +130,25 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
+files = ["backend", "src"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+  "backend.integrations.lsp_enhanced",
+  "backend.integrations.enhanced_coordination",
+  "backend.integrations.mcp",
+  "backend.integrations.debug",
+  "backend.integrations.tool_discovery",
+  "backend.integrations.proxmox",
+  "backend.integrations.n8n",
+  "backend.main",
+  "backend.test_server",
+]
+ignore_errors = true
 
 # Pytest configuration
 [tool.pytest.ini_options]

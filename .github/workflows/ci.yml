@@ -58,9 +58,9 @@ jobs:
       - name: Check formatting
         run: black --check .
       
-      - name: Run type checks (critical modules)
+      - name: Run type checks (full app)
         run: |
-          mypy backend/integrations/llm.py backend/agents src/open_deep_coder src/math_ops.py --hide-error-context --pretty
+          mypy backend src --hide-error-context --pretty
       
       - name: Run tests
         run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov=backend --cov-report=xml

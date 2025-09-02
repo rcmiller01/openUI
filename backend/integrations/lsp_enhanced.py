@@ -66,7 +66,7 @@ class LSPServer:
 class LSPManager:
     """Enhanced LSP Manager with real language server support"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.servers: dict[str, LSPServer] = {}
         self.language_mappings: dict[str, str] = {}
         self.is_initialized = False

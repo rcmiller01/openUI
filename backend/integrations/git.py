@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class GitManager:
     """Manages Git operations for repositories"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.authenticated = False
         self.username: Optional[str] = None
         self.token: Optional[str] = None

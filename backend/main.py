@@ -5,6 +5,7 @@ Main FastAPI application for the agentic IDE backend.
 Handles LLM integration, agent coordination, and development tools.
 """
 
+
 import logging
 import os
 import sys
@@ -390,7 +391,7 @@ async def _handle_ws_message(websocket: WebSocket, data: dict) -> None:
                     stream=True,
                 )
 
-                async for chunk in response:
+                async for chunk in response:  # type: ignore[attr-defined]
                     await websocket.send_json({"type": "chat_chunk", "data": chunk})
 
                 await websocket.send_json({"type": "chat_complete"})

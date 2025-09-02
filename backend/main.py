@@ -23,7 +23,10 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-try:
+from typing import TYPE_CHECKING
+
+# For type checking, always use absolute imports from the backend package.
+if TYPE_CHECKING:
     from backend.agents import AgentManager
     from backend.api.models import (
         AgentStatus,
@@ -45,29 +48,51 @@ try:
     from backend.integrations.tool_discovery import ToolDiscoveryManager
     from backend.integrations.git import GitManager
     from backend.api.credentials import router as credentials_router
-except ImportError:
-    # Fallback for when running as script
-    from agents import AgentManager
-    from api.models import (
-        AgentStatus,
-        ChatRequest,
-        ChatResponse,
-        FileContent,
-        FileInfo,
-        FileOperation,
-        LLMModel,
-        TaskRequest,
-    )
-    from integrations.debug import DebugManager
-    from integrations.enhanced_coordination import EnhancedAgentCoordinator
-    from integrations.llm import LLMManager
-    from integrations.lsp_enhanced import LSPManager
-    from integrations.mcp import MCPManager
-    from integrations.n8n import N8NManager
-    from integrations.proxmox import ProxmoxManager
-    from integrations.tool_discovery import ToolDiscoveryManager
-    from integrations.git import GitManager
-    from api.credentials import router as credentials_router
+else:  # Runtime fallback imports for script mode
+    try:
+        from backend.agents import AgentManager
+        from backend.api.models import (
+            AgentStatus,
+            ChatRequest,
+            ChatResponse,
+            FileContent,
+            FileInfo,
+            FileOperation,
+            LLMModel,
+            TaskRequest,
+        )
+        from backend.integrations.debug import DebugManager
+        from backend.integrations.enhanced_coordination import EnhancedAgentCoordinator
+        from backend.integrations.llm import LLMManager
+        from backend.integrations.lsp_enhanced import LSPManager
+        from backend.integrations.mcp import MCPManager
+        from backend.integrations.n8n import N8NManager
+        from backend.integrations.proxmox import ProxmoxManager
+        from backend.integrations.tool_discovery import ToolDiscoveryManager
+        from backend.integrations.git import GitManager
+        from backend.api.credentials import router as credentials_router
+    except ImportError:
+        from agents import AgentManager
+        from api.models import (
+            AgentStatus,
+            ChatRequest,
+            ChatResponse,
+            FileContent,
+            FileInfo,
+            FileOperation,
+            LLMModel,
+            TaskRequest,
+        )
+        from integrations.debug import DebugManager
+        from integrations.enhanced_coordination import EnhancedAgentCoordinator
+        from integrations.llm import LLMManager
+        from integrations.lsp_enhanced import LSPManager
+        from integrations.mcp import MCPManager
+        from integrations.n8n import N8NManager
+        from integrations.proxmox import ProxmoxManager
+        from integrations.tool_discovery import ToolDiscoveryManager
+        from integrations.git import GitManager
+        from api.credentials import router as credentials_router
 
 # Now load environment variables (after imports)
 load_dotenv()
@@ -494,7 +519,7 @@ async def list_files(path: str = ".") -> dict:
                 ),
             },
         }
-        with open(abs_path, encoding="utf-8") as f:
+        with open(abs_path, encoding="utf-8") as f:  # type: ignore[unreachable]
             content = f.read()
 
         stat = os.stat(abs_path)
@@ -674,7 +699,7 @@ async def trigger_git_commit_workflow(request: dict) -> dict:
 
 # Debug endpoints
 @app.get("/api/debug/sessions")
-async def get_debug_sessions():
+async def get_debug_sessions() -> list[dict[str, Any]]:
     """Get status of all debug sessions"""
     if not debug_manager:
         raise HTTPException(status_code=500, detail="Debug manager not initialized")
@@ -683,7 +708,7 @@ async def get_debug_sessions():
 
 
 @app.post("/api/debug/start")
-async def start_debug_session(request: dict):
+async def start_debug_session(request: dict) -> dict[str, Any]:
     """Start a debug session"""
     if not debug_manager:
         raise HTTPException(status_code=500, detail="Debug manager not initialized")
@@ -703,7 +728,7 @@ async def start_debug_session(request: dict):
 
 
 @app.post("/api/debug/breakpoint")
-async def set_breakpoint(request: dict):
+async def set_breakpoint(request: dict) -> dict[str, Any]:
     """Set a breakpoint"""
     if not debug_manager:
         raise HTTPException(status_code=500, detail="Debug manager not initialized")
@@ -736,7 +761,7 @@ async def get_available_tools(category: str | None = None) -> list[dict[str, Any
 
 
 @app.post("/api/tools/invoke")
-async def invoke_tool(request: dict):
+async def invoke_tool(request: dict) -> dict[str, Any]:
     """Invoke a tool capability"""
     if not tool_discovery:
         raise HTTPException(status_code=500, detail="Tool discovery not initialized")
@@ -752,7 +777,7 @@ async def invoke_tool(request: dict):
 
 
 @app.get("/api/tools/analytics")
-async def get_tool_analytics():
+async def get_tool_analytics() -> dict[str, Any]:
     """Get tool usage analytics"""
     if not tool_discovery:
         raise HTTPException(status_code=500, detail="Tool discovery not initialized")
@@ -762,7 +787,7 @@ async def get_tool_analytics():
 
 # Enhanced coordination endpoints
 @app.get("/api/coordination/status")
-async def get_coordination_status():
+async def get_coordination_status() -> dict[str, Any]:
     """Get enhanced coordination system status"""
     if not coordinator:
         raise HTTPException(status_code=500, detail="Coordinator not initialized")
@@ -774,7 +799,7 @@ async def get_coordination_status():
 
 
 @app.post("/api/coordination/task")
-async def submit_coordination_task(request: dict):
+async def submit_coordination_task(request: dict) -> dict[str, Any]:
     """Submit a task to the coordination system"""
     if not coordinator:
         raise HTTPException(status_code=500, detail="Coordinator not initialized")
@@ -796,7 +821,7 @@ async def submit_coordination_task(request: dict):
 
 
 @app.post("/api/coordination/workflow")
-async def submit_coordination_workflow(request: dict):
+async def submit_coordination_workflow(request: dict) -> dict[str, Any]:
     """Submit a workflow to the coordination system"""
     if not coordinator:
         raise HTTPException(status_code=500, detail="Coordinator not initialized")
@@ -813,7 +838,7 @@ async def submit_coordination_workflow(request: dict):
 
 # Git Integration endpoints (via MCP and n8n)
 @app.get("/api/git/status")
-async def git_status(repository_path: str = "."):
+async def git_status(repository_path: str = ".") -> dict[str, Any]:
     """Get git status using MCP"""
     if not mcp_manager:
         raise HTTPException(status_code=500, detail="MCP manager not initialized")
@@ -827,7 +852,7 @@ async def git_status(repository_path: str = "."):
 
 
 @app.post("/api/git/commit")
-async def git_commit(request: dict):
+async def git_commit(request: dict) -> dict[str, Any]:
     """Commit changes using MCP or n8n"""
     repository_path = request.get("repository_path", ".")
     commit_message = request["commit_message"]
@@ -863,7 +888,7 @@ async def git_commit(request: dict):
 
 
 @app.post("/api/git/push")
-async def git_push(request: dict):
+async def git_push(request: dict) -> dict[str, Any]:
     """Push changes using MCP"""
     if not mcp_manager:
         raise HTTPException(status_code=500, detail="MCP manager not initialized")
@@ -881,7 +906,7 @@ async def git_push(request: dict):
 
 
 @app.post("/api/git/pull")
-async def git_pull(request: dict):
+async def git_pull(request: dict) -> dict[str, Any]:
     """Pull changes using MCP"""
     if not mcp_manager:
         raise HTTPException(status_code=500, detail="MCP manager not initialized")
@@ -899,7 +924,7 @@ async def git_pull(request: dict):
 
 
 @app.post("/api/git/setup-automation")
-async def setup_git_automation(request: dict):
+async def setup_git_automation(request: dict) -> dict[str, Any]:
     """Setup automated git workflows using n8n"""
     if not n8n_manager:
         raise HTTPException(status_code=500, detail="n8n manager not initialized")
@@ -919,7 +944,7 @@ async def setup_git_automation(request: dict):
 
 # Git endpoints
 @app.post("/api/git/authenticate")
-async def authenticate_git(request: dict):
+async def authenticate_git(request: dict) -> dict[str, Any]:
     """Authenticate with Git credentials"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -935,7 +960,7 @@ async def authenticate_git(request: dict):
 
 
 @app.post("/api/git/repositories")
-async def create_git_repository(request: dict):
+async def create_git_repository(request: dict) -> dict[str, Any]:
     """Create a new Git repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -953,7 +978,7 @@ async def create_git_repository(request: dict):
 
 
 @app.post("/api/git/clone")
-async def clone_git_repository(request: dict):
+async def clone_git_repository(request: dict) -> dict[str, Any]:
     """Clone a Git repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -969,7 +994,7 @@ async def clone_git_repository(request: dict):
 
 
 @app.post("/api/git/init")
-async def init_git_repository(request: dict):
+async def init_git_repository(request: dict) -> dict[str, Any]:
     """Initialize a new Git repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -985,7 +1010,7 @@ async def init_git_repository(request: dict):
 
 
 @app.get("/api/git/status")
-async def get_git_status(repo_path: str):
+async def get_git_status(repo_path: str) -> dict[str, Any]:
     """Get Git status for a repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -999,7 +1024,7 @@ async def get_git_status(repo_path: str):
 
 
 @app.post("/api/git/commit")
-async def commit_git_changes(request: dict):
+async def commit_git_changes(request: dict) -> dict[str, Any]:
     """Commit changes to Git repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -1017,7 +1042,7 @@ async def commit_git_changes(request: dict):
 
 
 @app.post("/api/git/push")
-async def push_git_changes(request: dict):
+async def push_git_changes(request: dict) -> dict[str, Any]:
     """Push changes to remote repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -1033,7 +1058,7 @@ async def push_git_changes(request: dict):
 
 
 @app.post("/api/git/pull")
-async def pull_git_changes(request: dict):
+async def pull_git_changes(request: dict) -> dict[str, Any]:
     """Pull changes from remote repository"""
     if not git_manager:
         raise HTTPException(status_code=500, detail="Git manager not initialized")
@@ -1050,7 +1075,7 @@ async def pull_git_changes(request: dict):
 
 # Development and testing endpoints
 @app.get("/api/dev/test-llm")
-async def test_llm():
+async def test_llm() -> dict[str, Any]:
     """Test LLM integration"""
     if not llm_manager:
         raise HTTPException(status_code=500, detail="LLM manager not initialized")
@@ -1075,7 +1100,7 @@ async def test_llm():
 
 
 @app.get("/api/dev/test-integrations")
-async def test_integrations():
+async def test_integrations() -> dict[str, Any]:
     """Test all integrations"""
     results = {}
 

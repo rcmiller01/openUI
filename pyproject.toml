@@ -149,10 +149,10 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "backend.main"
-ignore_missing_imports = true
-disallow_untyped_defs = false
-warn_unreachable = false
-allow_redefinition = true
+ignore_missing_imports = false
+disallow_untyped_defs = true
+warn_unreachable = true
+allow_redefinition = false
 
 # Pytest configuration
 [tool.pytest.ini_options]

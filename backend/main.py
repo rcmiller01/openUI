@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, AsyncIterator, Callable
 from dotenv import load_dotenv
 
 import uvicorn
@@ -89,7 +89,7 @@ git_manager: GitManager | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan manager"""
     global agent_manager, llm_manager, lsp_manager, mcp_manager, n8n_manager
     global proxmox_manager, debug_manager, coordinator, tool_discovery, git_manager
@@ -198,7 +198,7 @@ def create_app() -> FastAPI:
     return app
 
 
-def startup_for_tests() -> callable:
+def startup_for_tests() -> Callable[[], None]:
     """Run application lifespan startup synchronously for tests.
 
     Returns a callable to run shutdown/cleanup when tests complete.
@@ -207,7 +207,7 @@ def startup_for_tests() -> callable:
     # Enter the async context to run startup
     asyncio.run(cm.__aenter__())
 
-    def _shutdown():
+    def _shutdown() -> None:
         try:
             asyncio.run(cm.__aexit__(None, None, None))
         except Exception:
@@ -726,7 +726,7 @@ async def set_breakpoint(request: dict):
 
 # Tool Discovery endpoints
 @app.get("/api/tools")
-async def get_available_tools(category: str = None):
+async def get_available_tools(category: str | None = None) -> list[dict[str, Any]]:
     """Get all available tools"""
     if not tool_discovery:
         raise HTTPException(status_code=500, detail="Tool discovery not initialized")

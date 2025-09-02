@@ -315,23 +315,35 @@ class LLMManager:
     ) -> ChatResponse:
         """Handle chat completion request with automatic model routing"""
 
+        # Optional document segmentation: if any message content is very large,
+        # split it into chunks to keep provider requests reasonable. We only
+        # keep the first chunk here to avoid changing streaming contract; a
+        # smarter stitching strategy could be added later.
+        def _segment(s: str, max_chars: int = 8000) -> str:
+            if len(s) <= max_chars:
+                return s
+            logger.debug("Segmenting large message content for LLM context")
+            return s[:max_chars]
+
         # Normalize messages: accept either ChatMessage objects or plain dicts
         normalized_messages: list[ChatMessage] = []
         for msg in messages:
             if isinstance(msg, ChatMessage):
+                # defensively segment content
+                msg.content = _segment(msg.content)
                 normalized_messages.append(msg)
             elif isinstance(msg, dict):
                 normalized_messages.append(
                     ChatMessage(
                         role=msg.get("role", "user"),
-                        content=msg.get("content", ""),
+                        content=_segment(msg.get("content", "")),
                         timestamp=datetime.now(),
                         model=msg.get("model"),
                     )
                 )
             else:
                 normalized_messages.append(
-                    ChatMessage(role="user", content=str(msg), timestamp=datetime.now())
+                    ChatMessage(role="user", content=_segment(str(msg)), timestamp=datetime.now())
                 )
 
         # Auto-select model if not specified

@@ -199,8 +199,28 @@ class PlannerAgent(Agent):
         self, analysis: dict[str, Any], context: dict[str, Any] | None
     ) -> dict[str, Any]:
         """Create a detailed implementation plan"""
-        # Use LLM to create detailed plan based on analysis
-        return {"plan": "Detailed plan created", "analysis": analysis}
+        # Draft actionable steps and persist to plan.md (YAML block)
+        steps = [
+            "parse input",
+            "implement function",
+            "write test",
+            "commit change",
+        ]
+        try:
+            from src.open_deep_coder.planner import append_plan_md, Task  # type: ignore
+            tasks = [
+                Task(
+                    id="OD-PLAN",
+                    title="Actionable plan",
+                    rationale="Planner agent breakdown",
+                    steps=steps,
+                    acceptance={"tests": "planner unit", "quality": "ruff/mypy"},
+                )
+            ]
+            append_plan_md(cycle=1, milestone="Planner Agent", tasks=tasks)
+        except Exception:
+            pass
+        return {"plan": {"steps": steps}, "analysis": analysis}
 
     async def _validate_plan(self, plan: dict[str, Any]) -> dict[str, Any]:
         """Validate the created plan"""
@@ -264,14 +284,33 @@ class ImplementerAgent(Agent):
         self, requirements: dict[str, Any], context: dict[str, Any] | None
     ) -> dict[str, Any]:
         """Generate code based on requirements"""
-        # Use LLM to generate code
-        return {"generated": True, "code": "// Generated code placeholder"}
+        # Use lightweight retrieval to suggest patterns
+        try:
+            from backend.integrations.retrieval import suggest_code_patterns
+        except Exception:
+            suggestions = []
+        else:
+            prompt = str(requirements.get("requirements", "implement feature"))
+            suggestions = suggest_code_patterns(prompt, root=os.getcwd(), k=3)
+
+        # Use LLM to generate code (placeholder)
+        return {
+            "generated": True,
+            "code": "// Generated code placeholder",
+            "suggestions": suggestions,
+        }
 
     async def _generate_tests(
         self, code: dict[str, Any], context: dict[str, Any] | None
     ) -> dict[str, Any]:
         """Generate tests for the code"""
-        return {"tests": "// Generated test placeholder"}
+        # Emit a smoke test to demonstrate post-codegen tests
+        try:
+            from src.open_deep_coder.testgen import generate_smoke_tests  # type: ignore
+            path = generate_smoke_tests()
+        except Exception:
+            path = None
+        return {"tests": "// Generated test placeholder", "file": path}
 
 
 class VerifierAgent(Agent):

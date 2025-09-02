@@ -74,6 +74,7 @@ Issues = "https://github.com/rcmiller01/openUI/issues"
 
 [project.scripts]
 open-deep-coder = "open_deep_coder.cli:main"
+openui = "open_deep_coder.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

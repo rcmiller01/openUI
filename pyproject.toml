@@ -139,7 +139,6 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = [
   "backend.integrations.lsp_enhanced",
-  "backend.integrations.enhanced_coordination",
   "backend.integrations.mcp",
   "backend.integrations.debug",
   "backend.integrations.tool_discovery",

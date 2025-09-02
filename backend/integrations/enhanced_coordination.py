@@ -91,15 +91,15 @@ class Workflow:
 class EnhancedAgentCoordinator:
     """Enhanced agent coordination with advanced workflow management"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.agents: dict[str, AgentInfo] = {}
         self.tasks: dict[str, Task] = {}
         self.workflows: dict[str, Workflow] = {}
-        self.task_queue: asyncio.Queue = asyncio.Queue()
+        self.task_queue: asyncio.Queue[str] = asyncio.Queue()
         self.completed_tasks: dict[str, Task] = {}
         self.is_initialized = False
-        self._coordinator_task: asyncio.Task | None = None
-        self._performance_monitor_task: asyncio.Task | None = None
+        self._coordinator_task: asyncio.Task[Any] | None = None
+        self._performance_monitor_task: asyncio.Task[Any] | None = None
 
         # Configuration
         self.max_retries = 3
@@ -107,7 +107,7 @@ class EnhancedAgentCoordinator:
         self.health_check_interval = timedelta(seconds=30)
 
         # Event callbacks
-        self.event_callbacks: dict[str, list[Callable]] = {
+        self.event_callbacks: dict[str, list[Callable[[dict[str, Any]], None]]] = {
             "task_completed": [],
             "task_failed": [],
             "agent_idle": [],
@@ -384,7 +384,7 @@ class EnhancedAgentCoordinator:
 
     def add_event_callback(
         self, event_type: str, callback: Callable[[dict[str, Any]], None]
-    ):
+    ) -> None:
         """Add an event callback"""
         if event_type in self.event_callbacks:
             self.event_callbacks[event_type].append(callback)

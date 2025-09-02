@@ -77,7 +77,7 @@ class DebugSession:
 class DebugManager:
     """Manages debugging sessions and Debug Adapter Protocol integration"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.sessions: dict[str, DebugSession] = {}
         self.is_initialized = False
         self._next_session_id = 1

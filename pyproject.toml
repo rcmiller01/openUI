@@ -141,7 +141,6 @@ module = [
   "backend.integrations.lsp_enhanced",
   "backend.integrations.mcp",
   "backend.integrations.debug",
-  "backend.integrations.tool_discovery",
   "backend.integrations.proxmox",
   "backend.integrations.n8n",
   "backend.main",

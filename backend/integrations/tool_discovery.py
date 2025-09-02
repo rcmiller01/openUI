@@ -170,8 +170,6 @@ class ToolDiscoveryManager:
                 return await self._invoke_debug_tool(tool, capability, parameters)
             elif tool.type == ToolType.NATIVE:
                 return await self._invoke_native_tool(tool, capability, parameters)
-            else:
-                return {"error": f"Unsupported tool type: {tool.type}"}
         except Exception as e:
             logger.error(f"Error invoking tool {tool_id}: {e}")
             return {"error": str(e)}
@@ -204,9 +202,11 @@ class ToolDiscoveryManager:
     ) -> dict[str, Any]:
         """Invoke MCP tool"""
         mcp_manager = self.providers["mcp"]
-        return await mcp_manager.invoke_tool(
+        from typing import cast
+        result = await mcp_manager.invoke_tool(
             tool.source, tool.name.split("_", 1)[1], params
         )
+        return cast(dict[str, Any], result)
 
     async def _invoke_n8n_tool(
         self, tool: Tool, capability: str, params: dict[str, Any]

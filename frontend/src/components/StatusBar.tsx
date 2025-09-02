@@ -1,3 +1,4 @@
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAppStore } from '@/store';
 
@@ -51,18 +52,50 @@ const ThemeButton = styled.button`
   }
 `;
 
+const OverflowMenu = styled.div`
+  position: absolute;
+  bottom: 28px;
+  right: 12px;
+  background: ${props => props.theme.colors.bg.primary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+`;
+
+const OverflowContainer = styled.div`
+  position: relative;
+`;
+
 export default function StatusBar() {
   const { 
     theme, 
     setTheme, 
     selectedModel, 
     isLocalMode, 
-    toggleLocalMode,
     activeFile,
-    agents,
-    isChatPanelOpen,
-    toggleChatPanel
+    agents
   } = useAppStore();
+  const [showOverflow, setShowOverflow] = useState(false);
+  const overflowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowOverflow(false);
+    };
+    const onClick = (ev: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(ev.target as Node)) {
+        setShowOverflow(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('click', onClick);
+    };
+  }, []);
 
   const runningAgents = Object.values(agents).filter(agent => agent.status === 'running').length;
 
@@ -89,7 +122,6 @@ export default function StatusBar() {
         <StatusItem>
           📁 {activeFile ? activeFile.split('/').pop() : 'No file'}
         </StatusItem>
-        
         {runningAgents > 0 && (
           <StatusItem>
             🤖 {runningAgents} agent{runningAgents > 1 ? 's' : ''} running
@@ -98,25 +130,30 @@ export default function StatusBar() {
       </StatusLeft>
 
       <StatusRight>
-        <StatusItem onClick={toggleLocalMode}>
+        <StatusItem title="Provider">
           {isLocalMode ? '🏠 Local' : '☁️ Remote'}
         </StatusItem>
-        
-        <StatusItem onClick={toggleChatPanel}>
-          💬 Chat {isChatPanelOpen ? '(Open)' : '(Closed)'}
-        </StatusItem>
-        
-        <StatusItem>
+
+        <StatusItem title="Active Model">
           🧠 {selectedModel || 'Auto'}
         </StatusItem>
-        
+
         <ThemeButton onClick={toggleTheme}>
           🎨 {getThemeDisplayName(theme)}
         </ThemeButton>
-        
-        <StatusItem>
-          Open-Deep-Coder v0.1.0
-        </StatusItem>
+
+        {/* Overflow menu for secondary items */}
+        <OverflowContainer ref={overflowRef}>
+          <StatusItem onClick={() => setShowOverflow((s) => !s)} aria-haspopup="true" aria-expanded={showOverflow} tabIndex={0} role="button">
+            ⋯
+          </StatusItem>
+          {showOverflow && (
+            <OverflowMenu role="menu" aria-label="More status items">
+              <div>Chat: { /* placeholder */ }</div>
+              <div>Open-Deep-Coder v0.1.0</div>
+            </OverflowMenu>
+          )}
+        </OverflowContainer>
       </StatusRight>
     </StatusBarContainer>
   );

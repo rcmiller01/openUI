@@ -38,27 +38,20 @@ const Select = styled.select`
   }
 `;
 
-const ProviderBadge = styled.span<{ provider: string }>`
-  font-size: 10px;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-weight: 500;
-  background-color: ${props => {
-    switch (props.provider) {
-      case 'openrouter': return '#4CAF50';
-      case 'ollama': return '#2196F3';
-      default: return props.theme.colors.ui.hover;
-    }
-  }};
-  color: white;
+const SaveRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
 `;
 
-const ModelInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: ${props => props.theme.colors.text.muted};
+const ErrorText = styled.span`
+  color: ${props => props.theme.colors.text.error};
+  font-size: 12px;
+`;
+
+const StatusMessage = styled.div`
+  font-size: 12px;
+  color: ${props => props.theme.colors.text.primary};
 `;
 
 const SettingsGroup = styled.div`
@@ -112,118 +105,105 @@ const ToggleGroup = styled.div`
 `;
 
 export default function ModelSelector() {
-  const {
-    availableModels,
-    selectedModel,
-    isLocalMode,
-    setSelectedModel,
-    toggleLocalMode
-  } = useAppStore();
-
-  // Local UI for API keys (persisted to localStorage)
+  const { availableModels, settings, setAvailableModels, setSelectedModel } = useAppStore();
+  const [provider, setProvider] = useState<'auto'|'openrouter'|'ollama'|'local'>(settings.modelProvider || 'auto');
+  const [modelId, setModelId] = useState<string | null>(settings.modelId || null);
   const [openrouterKey, setOpenrouterKey] = useState<string | null>(localStorage.getItem('OPENROUTER_API_KEY'));
   const [ollamaUrl, setOllamaUrl] = useState<string>(localStorage.getItem('OLLAMA_BASE_URL') || 'http://localhost:11434');
+  const [models, setModels] = useState<typeof availableModels>(availableModels || []);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const load = async () => {
+      const fetched = await apiClient.getAvailableModels();
+      setAvailableModels(fetched);
+      setModels(fetched);
+    };
+    load();
+  }, [setAvailableModels]);
+
+  useEffect(() => {
+    // persist local inputs to localStorage
     if (openrouterKey) localStorage.setItem('OPENROUTER_API_KEY', openrouterKey);
     else localStorage.removeItem('OPENROUTER_API_KEY');
-  }, [openrouterKey]);
-
-  useEffect(() => {
     if (ollamaUrl) localStorage.setItem('OLLAMA_BASE_URL', ollamaUrl);
     else localStorage.removeItem('OLLAMA_BASE_URL');
-  }, [ollamaUrl]);
+  }, [openrouterKey, ollamaUrl]);
 
-  const saveOpenrouterKey = async () => {
-    try {
-      await apiClient.storeCredential('openrouter', { api_key: openrouterKey });
-      alert('OpenRouter key saved to server');
-    } catch (err) {
-      console.error('Error saving openrouter key', err);
-      alert('Failed to save OpenRouter key');
+  const handleProviderChange = (p: typeof provider) => {
+    setProvider(p);
+    // if provider changes to local, try to select a local model
+    if (p === 'ollama' || p === 'local') {
+      const local = models.find(m => m.provider === 'ollama' || m.provider === 'local');
+      if (local) setModelId(local.id);
     }
   };
 
-  const saveOllamaUrl = async () => {
+  const filtered = provider === 'auto'
+    ? models
+    : models.filter(m => {
+      if (provider === 'openrouter') return m.provider === 'openrouter';
+      if (provider === 'ollama' || provider === 'local') return m.provider === 'ollama' || m.provider === 'local';
+      return true;
+    });
+
+  const saveProviderSettings = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+  setSaveMessage(null);
     try {
-      await apiClient.storeCredential('ollama', { base_url: ollamaUrl });
-      alert('Ollama URL saved to server');
-    } catch (err) {
-      console.error('Error saving ollama url', err);
-      alert('Failed to save Ollama URL');
+      // store credentials on server where applicable
+      if (openrouterKey) {
+        await apiClient.storeCredential('openrouter', { api_key: openrouterKey });
+      }
+      if (ollamaUrl) {
+        await apiClient.storeCredential('ollama', { base_url: ollamaUrl });
+      }
+
+      // sanity test backend LLM connectivity
+      await apiClient.testLLM();
+
+      // persist to global settings
+      const { updateSettings } = useAppStore.getState();
+      updateSettings({ modelProvider: provider, modelId: modelId });
+      // reflect selected model globally
+      if (modelId) setSelectedModel(modelId);
+  setSaveMessage('Settings saved and verified');
+    } catch (err: any) {
+      console.error('Error saving provider settings', err);
+      setSaveError(err?.message || 'Failed to save');
+    } finally {
+      setIsSaving(false);
     }
-  };
-
-  const filteredModels = isLocalMode 
-    ? availableModels.filter(m => m.provider === 'ollama')
-    : availableModels.filter(m => m.provider === 'openrouter');
-
-  const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
-
-  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedModel(event.target.value);
-  };
-
-  const getModelDisplayName = (model: typeof availableModels[0]) => {
-    const name = model.name.length > 30 ? model.name.substring(0, 30) + '...' : model.name;
-    return `${name} (${model.provider})`;
   };
 
   return (
     <SelectorContainer>
-      <SelectorLabel>Model:</SelectorLabel>
-      
-      <ToggleGroup>
-        <ToggleButton 
-          active={!isLocalMode}
-          onClick={() => !isLocalMode || toggleLocalMode()}
-          title="Use remote models via OpenRouter"
-        >
-          Remote
-        </ToggleButton>
-        <ToggleButton 
-          active={isLocalMode}
-          onClick={() => isLocalMode || toggleLocalMode()}
-          title="Use local models via Ollama"
-        >
-          Local
-        </ToggleButton>
+      <SelectorLabel>Model</SelectorLabel>
+
+      <ToggleGroup role="tablist" aria-label="Model provider">
+        <ToggleButton active={provider === 'auto'} onClick={() => handleProviderChange('auto')} aria-pressed={provider === 'auto'}>Auto</ToggleButton>
+        <ToggleButton active={provider === 'openrouter'} onClick={() => handleProviderChange('openrouter')} aria-pressed={provider === 'openrouter'}>Remote</ToggleButton>
+        <ToggleButton active={provider === 'ollama'} onClick={() => handleProviderChange('ollama')} aria-pressed={provider === 'ollama'}>Local</ToggleButton>
       </ToggleGroup>
-      
-      <Select value={selectedModel || ''} onChange={handleModelChange}>
+
+      <Select value={modelId || ''} onChange={(e) => setModelId(e.target.value || null)} aria-label="Model selector">
         <option value="">Auto-select model</option>
-        {filteredModels.map((model) => (
-          <option key={model.id} value={model.id}>
-            {getModelDisplayName(model)}
-          </option>
+        {filtered.map(m => (
+          <option key={m.id} value={m.id}>{m.name} ({m.provider})</option>
         ))}
       </Select>
-      
-      {selectedModelInfo && (
-        <ModelInfo>
-          <ProviderBadge provider={selectedModelInfo.provider}>
-            {selectedModelInfo.provider}
-          </ProviderBadge>
-          <span>{selectedModelInfo.contextLength.toLocaleString()} ctx</span>
-        </ModelInfo>
-      )}
 
-      {/* Small settings inline for API keys */}
       <SettingsGroup>
-        <SmallInput
-          type="text"
-          placeholder="OpenRouter API Key"
-          value={openrouterKey || ''}
-          onChange={(e) => setOpenrouterKey(e.target.value || null)}
-        />
-  <ToggleButton active={false} onClick={saveOpenrouterKey}>Save</ToggleButton>
-        <SmallInput
-          type="text"
-          placeholder="Ollama URL (http://host:port)"
-          value={ollamaUrl}
-          onChange={(e) => setOllamaUrl(e.target.value)}
-        />
-  <ToggleButton active={false} onClick={saveOllamaUrl}>Save</ToggleButton>
+        <SmallInput placeholder="OpenRouter API Key" value={openrouterKey || ''} onChange={(e) => setOpenrouterKey(e.target.value || null)} />
+        <SmallInput placeholder="Ollama URL" value={ollamaUrl} onChange={(e) => setOllamaUrl(e.target.value)} />
+        <SaveRow>
+          <ToggleButton active={false} onClick={saveProviderSettings} aria-disabled={isSaving} aria-busy={isSaving}>{isSaving ? 'Saving...' : 'Save'}</ToggleButton>
+          {saveError && <ErrorText role="alert">{saveError}</ErrorText>}
+          {saveMessage && <StatusMessage role="status" aria-live="polite">{saveMessage}</StatusMessage>}
+        </SaveRow>
       </SettingsGroup>
     </SelectorContainer>
   );

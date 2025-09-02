@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { useAppStore, AgentType } from './store';
 import { themes } from './themes';
@@ -22,6 +22,19 @@ const GlobalStyle = createGlobalStyle`
     background-color: ${props => props.theme.colors.bg.primary};
     color: ${props => props.theme.colors.text.primary};
     overflow: hidden;
+  }
+
+  /* Accessible focus outlines for keyboard users */
+  :focus-visible {
+    outline: 2px solid ${props => props.theme.colors.border.accent};
+    outline-offset: 2px;
+  }
+
+  /* Forced-colors / High contrast support fallback */
+  @media (forced-colors: active) {
+    :focus-visible {
+      outline: 3px solid WindowText;
+    }
   }
 
   ::-webkit-scrollbar {
@@ -52,15 +65,17 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const AppContainer = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 280px 1fr 360px;
+  grid-template-rows: 1fr;
   height: 100vh;
   width: 100vw;
+  gap: 0;
 `;
 
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1;
   overflow: hidden;
 `;
 
@@ -138,6 +153,11 @@ const CloseButton = styled.button`
   }
 `;
 
+const ModalBody = styled.div`
+  flex: 1;
+  overflow: auto;
+`;
+
 export default function App() {
   const { 
     theme, 
@@ -153,6 +173,8 @@ export default function App() {
   } = useAppStore();
 
   const currentTheme = themes[theme as keyof typeof themes];
+
+  const modalCloseRef = useRef<HTMLButtonElement | null>(null);
 
   // Initialize default conversation if none exists
   useEffect(() => {
@@ -183,7 +205,7 @@ export default function App() {
       <GlobalStyle />
       <AppContainer>
         {isSidebarOpen && <Sidebar />}
-        
+
         <MainContent>
           <EditorArea>
             <CentralPanel>
@@ -192,27 +214,28 @@ export default function App() {
                 <TerminalPanel />
               </BottomPanel>
             </CentralPanel>
-            
+
             {isChatPanelOpen && <ChatPanel />}
           </EditorArea>
-          
+
           <StatusBar />
         </MainContent>
 
+        {/* Right panel: Agents (resizable/collapsible) */}
         <AgentPanel />
       </AppContainer>
 
       {/* Advanced Tools Modal */}
       {isAdvancedToolsOpen && (
-        <AdvancedToolsModal>
+        <AdvancedToolsModal role="dialog" aria-modal="true" aria-label="Advanced tools dashboard">
           <AdvancedToolsContent>
             <ModalHeader>
               <ModalTitle>Advanced Tools Dashboard</ModalTitle>
-              <CloseButton onClick={() => setIsAdvancedToolsOpen(false)}>×</CloseButton>
+              <CloseButton ref={modalCloseRef} onClick={() => setIsAdvancedToolsOpen(false)}>×</CloseButton>
             </ModalHeader>
-            <div style={{ flex: 1, overflow: 'auto' }}>
+            <ModalBody>
               <AdvancedToolsDashboard />
-            </div>
+            </ModalBody>
           </AdvancedToolsContent>
         </AdvancedToolsModal>
       )}

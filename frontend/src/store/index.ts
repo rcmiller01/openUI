@@ -108,8 +108,16 @@ export interface AppState {
     lineNumbers: boolean;
     minimap: boolean;
     keybinds: Record<string, string>;
+    // Model/provider persistence and UI layout
+    modelProvider?: 'auto' | 'openrouter' | 'ollama' | 'local';
+    modelId?: string | null;
+    rightPanelWidth?: number;
+    rightPanelCollapsed?: boolean;
   };
   updateSettings: (settings: Partial<AppState['settings']>) => void;
+  // Right panel controls
+  setRightPanelWidth: (width: number) => void;
+  toggleRightPanelCollapsed: () => void;
 }
 
 // Create the store with persistence
@@ -303,6 +311,10 @@ export const useAppStore = create<AppState>()(
         lineNumbers: true,
         minimap: true,
         keybinds: {},
+  modelProvider: 'auto',
+  modelId: null,
+  rightPanelWidth: 360,
+  rightPanelCollapsed: false,
       },
       
       updateSettings: (newSettings) => {
@@ -310,6 +322,9 @@ export const useAppStore = create<AppState>()(
           settings: { ...state.settings, ...newSettings },
         }));
       },
+  // Right panel helpers
+  setRightPanelWidth: (width) => set({ settings: { ...get().settings, rightPanelWidth: width } }),
+  toggleRightPanelCollapsed: () => set((state) => ({ settings: { ...state.settings, rightPanelCollapsed: !state.settings.rightPanelCollapsed } })),
     }),
     {
       name: 'open-deep-coder-store',

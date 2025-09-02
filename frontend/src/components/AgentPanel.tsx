@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAppStore } from '../store';
 import { AgentType, AgentStatus as AgentStatusType } from '../store';
 
-const AgentPanelContainer = styled.div<{ isOpen: boolean }>`
-  width: ${props => props.isOpen ? '300px' : '40px'};
+const AgentPanelContainer = styled.div<{ width: number; isOpen: boolean }>`
+  width: ${props => props.isOpen ? `${props.width}px` : '40px'};
   height: 100%;
   background-color: ${props => props.theme.colors.bg.secondary};
   border-left: 1px solid ${props => props.theme.colors.border.primary};
@@ -12,6 +12,13 @@ const AgentPanelContainer = styled.div<{ isOpen: boolean }>`
   overflow: hidden;
   display: flex;
   flex-direction: column;
+`;
+
+const ResizeHandle = styled.div`
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  &:hover { background: rgba(0,0,0,0.05); }
 `;
 
 const PanelHeader = styled.div`
@@ -60,6 +67,15 @@ const AgentCard = styled.div`
   &:hover {
     border-color: ${props => props.theme.colors.border.accent};
   }
+`;
+
+const ErrorBox = styled.div`
+  font-size: 11px;
+  color: ${props => props.theme.colors.text.error};
+  margin-top: 6px;
+  padding: 4px;
+  background-color: rgba(244, 67, 54, 0.06);
+  border-radius: 4px;
 `;
 
 const AgentHeader = styled.div`
@@ -114,9 +130,10 @@ const ProgressFill = styled.div<{ progress: number }>`
   transition: width 0.3s ease;
 `;
 
-const AgentControls = styled.div`
+const HeaderRight = styled.div`
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 `;
 
 const ControlButton = styled.button<{ variant?: 'primary' | 'danger' }>`
@@ -171,14 +188,51 @@ const GlobalButton = styled.button<{ variant?: 'danger' }>`
 `;
 
 export default function AgentPanel() {
-  const [isOpen, setIsOpen] = useState(true);
-  const { agents, runAgent, stopAgent, stopAllAgents } = useAppStore();
+  const resizeRef = useRef<HTMLDivElement | null>(null);
+  const { agents, runAgent, stopAgent, stopAllAgents, settings, setRightPanelWidth, toggleRightPanelCollapsed } = useAppStore();
+  const [isOpen, setIsOpen] = useState(!settings.rightPanelCollapsed);
+  const [width, setWidth] = useState<number>(settings.rightPanelWidth || 360);
+  // track expanded state per-agent for compact cards
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    setIsOpen(!settings.rightPanelCollapsed);
+    setWidth(settings.rightPanelWidth || 360);
+  }, [settings.rightPanelCollapsed, settings.rightPanelWidth]);
+
+  useEffect(() => {
+    const el = resizeRef.current;
+    if (!el) return;
+    let startX = 0;
+    let startWidth = width;
+
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      startWidth = width;
+      const onMouseMove = (ev: MouseEvent) => {
+        const dx = startX - ev.clientX;
+        const newWidth = Math.min(480, Math.max(320, startWidth + dx));
+        setWidth(newWidth);
+      };
+      const onMouseUp = () => {
+        setRightPanelWidth(width);
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+    return () => el.removeEventListener('mousedown', onMouseDown);
+  }, [width, setRightPanelWidth]);
+
+  // Order enforced per UX: Orchestrator, Planner, Verifier, Implementer, Reviewer, Researcher
   const agentTypes: AgentType[] = [
     'orchestrator',
-    'planner', 
-    'implementer',
+    'planner',
     'verifier',
+    'implementer',
     'reviewer',
     'researcher'
   ];
@@ -214,15 +268,22 @@ export default function AgentPanel() {
     }
   };
 
+  const toggleAgent = (type: AgentType) => {
+    const agent = agents[type];
+    if (!agent) return;
+    if (agent.status === 'running') stopAgent(type);
+    else handleRunAgent(type);
+  };
+
   const formatProgress = (progress?: number) => {
     return progress ? Math.round(progress * 100) : 0;
   };
 
   return (
-    <AgentPanelContainer isOpen={isOpen}>
+    <AgentPanelContainer width={width} isOpen={isOpen}>
       <PanelHeader>
         {isOpen && <PanelTitle>Agents</PanelTitle>}
-        <ToggleButton onClick={() => setIsOpen(!isOpen)}>
+        <ToggleButton onClick={() => { toggleRightPanelCollapsed(); setIsOpen(!isOpen); }} aria-label={isOpen ? 'Collapse agents panel' : 'Expand agents panel'}>
           {isOpen ? '→' : '←'}
         </ToggleButton>
       </PanelHeader>
@@ -232,53 +293,42 @@ export default function AgentPanel() {
           <AgentList>
             {agentTypes.map((type) => {
               const agent = agents[type];
+              const isExpanded = !!expanded[type];
               return (
                 <AgentCard key={type}>
-                  <AgentHeader>
+                  <AgentHeader role="button" tabIndex={0} onClick={() => setExpanded((s) => ({ ...s, [type]: !s[type] }))} onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpanded((s) => ({ ...s, [type]: !s[type] })); }} aria-expanded={isExpanded}>
                     <AgentName>
                       {getAgentIcon(type)} {type}
                     </AgentName>
-                    <StatusIndicator status={agent.status} />
+                    <HeaderRight>
+                      <StatusIndicator status={agent.status} />
+                      <ControlButton
+                        variant={agent.status === 'running' ? 'danger' : 'primary'}
+                        onClick={(ev) => { ev.stopPropagation(); toggleAgent(type); }}
+                        aria-pressed={agent.status === 'running'}
+                        aria-label={agent.status === 'running' ? `Stop ${type}` : `Run ${type}`}
+                      >
+                        {agent.status === 'running' ? 'Stop' : 'Run'}
+                      </ControlButton>
+                    </HeaderRight>
                   </AgentHeader>
-                  
-                  <AgentTask>
-                    {agent.currentTask || getAgentDescription(type)}
-                  </AgentTask>
-                  
-                  {agent.progress !== undefined && (
-                    <ProgressBar>
-                      <ProgressFill progress={formatProgress(agent.progress)} />
-                    </ProgressBar>
-                  )}
-                  
-                  <AgentControls>
-                    <ControlButton
-                      variant="primary"
-                      onClick={() => handleRunAgent(type)}
-                      disabled={agent.status === 'running'}
-                    >
-                      Run
-                    </ControlButton>
-                    <ControlButton
-                      variant="danger"
-                      onClick={() => stopAgent(type)}
-                      disabled={agent.status === 'idle'}
-                    >
-                      Stop
-                    </ControlButton>
-                  </AgentControls>
-                  
-                  {agent.error && (
-                    <div style={{
-                      fontSize: '11px',
-                      color: '#f44336',
-                      marginTop: '6px',
-                      padding: '4px',
-                      backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                      borderRadius: '4px'
-                    }}>
-                      {agent.error}
-                    </div>
+
+                  {isExpanded && (
+                    <>
+                      <AgentTask>
+                        {agent.currentTask || getAgentDescription(type)}
+                      </AgentTask>
+
+                      {agent.progress !== undefined && (
+                        <ProgressBar>
+                          <ProgressFill progress={formatProgress(agent.progress)} />
+                        </ProgressBar>
+                      )}
+
+                      {agent.error && (
+                        <ErrorBox>{agent.error}</ErrorBox>
+                      )}
+                    </>
                   )}
                 </AgentCard>
               );
@@ -287,20 +337,25 @@ export default function AgentPanel() {
 
           <GlobalControls>
             <GlobalButton onClick={() => {
-              // Run orchestrator to coordinate all agents
-              runAgent('orchestrator', 'Coordinate full workflow');
+              // Run all agents in order
+              agentTypes.forEach((t) => runAgent(t, `Run all: ${t}`));
             }}>
               Run All
             </GlobalButton>
             <GlobalButton 
               variant="danger"
-              onClick={stopAllAgents}
+              onClick={() => {
+                agentTypes.forEach((t) => stopAgent(t));
+                stopAllAgents();
+              }}
             >
               Stop All
             </GlobalButton>
           </GlobalControls>
         </>
       )}
+      {/* resize handle */}
+      {isOpen && <ResizeHandle ref={resizeRef} />}
     </AgentPanelContainer>
   );
 }

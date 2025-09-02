@@ -97,6 +97,23 @@ const InputControls = styled.div`
   align-items: center;
 `;
 
+const ComposerFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: ${props => props.theme.colors.text.muted};
+`;
+
+const ModelPill = styled.span`
+  background: ${props => props.theme.colors.bg.secondary};
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: ${props => props.theme.colors.text.primary};
+  border: 1px solid ${props => props.theme.colors.border.primary};
+`;
+
 const SendButton = styled.button<{ disabled: boolean }>`
   padding: 8px 16px;
   background-color: ${props => props.disabled ? props.theme.colors.ui.disabled : props.theme.colors.text.accent};
@@ -294,7 +311,8 @@ export default function ChatPanel() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about your code..."
+                    placeholder="Ask me anything about your code..."
+                    aria-label="Chat message input"
             disabled={isLoading}
           />
           <InputControls>
@@ -308,6 +326,10 @@ export default function ChatPanel() {
               {isLoading ? 'Sending...' : 'Send'}
             </SendButton>
           </InputControls>
+          <ComposerFooter>
+            <ModelPill role="status" aria-live="polite">{selectedModel ? selectedModel : 'Auto'}</ModelPill>
+            <div>Enter = send • Shift+Enter = newline</div>
+          </ComposerFooter>
         </InputArea>
       </InputContainer>
       

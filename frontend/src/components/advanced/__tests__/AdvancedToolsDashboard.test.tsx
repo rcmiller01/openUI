@@ -1,35 +1,50 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi, describe, test, expect } from 'vitest';
+import { ThemeProvider } from 'styled-components';
 import { AdvancedToolsDashboard } from '../AdvancedToolsDashboard';
+import { lightLowTheme } from '../../../themes';
 
 // Mock the child components to simplify testing
-jest.mock('../ToolDiscovery', () => ({
+vi.mock('../ToolDiscovery', () => ({
   ToolDiscovery: () => <div data-testid="tool-discovery">Tool Discovery Component</div>
 }));
 
-jest.mock('../DebugPanel', () => ({
+vi.mock('../DebugPanel', () => ({
   DebugPanel: () => <div data-testid="debug-panel">Debug Panel Component</div>
 }));
 
-jest.mock('../LSPIntegration', () => ({
+vi.mock('../LSPIntegration', () => ({
   LSPIntegration: () => <div data-testid="lsp-integration">LSP Integration Component</div>
 }));
 
-jest.mock('../N8NWorkflowManager', () => ({
+vi.mock('../N8NWorkflowManager', () => ({
   N8NWorkflowManager: () => <div data-testid="n8n-workflow">n8n Workflow Manager Component</div>
 }));
 
-jest.mock('../GitIntegration', () => ({
+vi.mock('../GitIntegration', () => ({
   GitIntegration: () => <div data-testid="git-integration">Git Integration Component</div>
 }));
 
-jest.mock('../AgentCoordination', () => ({
+vi.mock('../AgentCoordination', () => ({
   AgentCoordination: () => <div data-testid="agent-coordination">Agent Coordination Component</div>
 }));
 
+// Test wrapper with theme provider
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ThemeProvider theme={lightLowTheme}>
+    {children}
+  </ThemeProvider>
+);
+
 describe('AdvancedToolsDashboard', () => {
   test('renders without crashing', () => {
-    render(<AdvancedToolsDashboard />);
+    render(
+      <TestWrapper>
+        <AdvancedToolsDashboard />
+      </TestWrapper>
+    );
     
     // Check that the main title is rendered
     expect(screen.getByText('Advanced Tools Dashboard')).toBeInTheDocument();
@@ -39,7 +54,11 @@ describe('AdvancedToolsDashboard', () => {
   });
 
   test('renders all tab navigation buttons', () => {
-    render(<AdvancedToolsDashboard />);
+    render(
+      <TestWrapper>
+        <AdvancedToolsDashboard />
+      </TestWrapper>
+    );
     
     // Check that all tab buttons are rendered
     expect(screen.getByText('🛠️ Tools')).toBeInTheDocument();
@@ -51,14 +70,22 @@ describe('AdvancedToolsDashboard', () => {
   });
 
   test('renders the default active tab (ToolDiscovery)', () => {
-    render(<AdvancedToolsDashboard />);
+    render(
+      <TestWrapper>
+        <AdvancedToolsDashboard />
+      </TestWrapper>
+    );
     
     // Check that the ToolDiscovery component is rendered by default
     expect(screen.getByTestId('tool-discovery')).toBeInTheDocument();
   });
 
   test('renders quick action buttons', () => {
-    render(<AdvancedToolsDashboard />);
+    render(
+      <TestWrapper>
+        <AdvancedToolsDashboard />
+      </TestWrapper>
+    );
     
     // Check that quick action buttons are rendered
     expect(screen.getByText('Discover Tools')).toBeInTheDocument();
@@ -67,7 +94,11 @@ describe('AdvancedToolsDashboard', () => {
   });
 
   test('renders system status indicators', () => {
-    render(<AdvancedToolsDashboard />);
+    render(
+      <TestWrapper>
+        <AdvancedToolsDashboard />
+      </TestWrapper>
+    );
     
     // Check that system status indicators are rendered
     expect(screen.getByText('System Status')).toBeInTheDocument();

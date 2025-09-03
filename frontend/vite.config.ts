@@ -32,6 +32,20 @@ export default defineConfig({
     target: process.env.TAURI_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split Monaco Editor into its own chunk
+          'monaco-editor': ['monaco-editor'],
+          // Split React and related libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Split UI libraries
+          'ui-vendor': ['styled-components', 'zustand', 'immer'],
+          // Split syntax highlighting libraries
+          'syntax-vendor': ['@codemirror/state', '@codemirror/view', '@codemirror/lang-javascript', '@codemirror/lang-python', '@codemirror/lang-json'],
+        }
+      }
+    }
   },
   
   // Path resolution

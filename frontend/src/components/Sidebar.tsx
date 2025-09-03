@@ -80,7 +80,7 @@ const AdvancedToolsLink = styled.div`
     background-color: ${props => props.theme.colors.ui.hover};
   }
   
-  svg {
+  & svg {
     width: 16px;
     height: 16px;
   }

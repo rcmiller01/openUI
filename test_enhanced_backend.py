@@ -11,7 +11,7 @@ import asyncio
 import httpx
 
 
-async def test_enhanced_backend():
+async def test_enhanced_backend() -> None:
     """Test all enhanced backend capabilities"""
     base_url = "http://127.0.0.1:8000"
 
@@ -79,7 +79,7 @@ async def test_enhanced_backend():
                 print(f"✅ Found {len(tools)} tools")
 
                 # Group tools by category
-                categories = {}
+                categories: dict[str, list[str]] = {}
                 for tool in tools:
                     tool_type = tool["type"]
                     if tool_type not in categories:
@@ -163,7 +163,7 @@ async def test_enhanced_backend():
                 print(f"✅ Found {len(models)} available models")
 
                 # Group by provider
-                providers = {}
+                providers: dict[str, list[str]] = {}
                 for model in models:
                     provider = model.get("provider", "unknown")
                     if provider not in providers:

@@ -8,7 +8,7 @@ import asyncio
 import httpx
 
 
-async def test_llm_integration():
+async def test_llm_integration() -> None:
     async with httpx.AsyncClient() as client:
         # Test health endpoint
         print("🔍 Testing health endpoint...")

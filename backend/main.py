@@ -292,7 +292,9 @@ async def health_check() -> dict:
             "lsp_manager": lsp_manager is not None and lsp_manager.is_initialized,
             "mcp_manager": mcp_manager is not None and mcp_manager.is_initialized,
             "n8n_manager": n8n_manager is not None and n8n_manager.is_initialized,
-            "proxmox_manager": proxmox_manager is not None and proxmox_manager.is_initialized,
+            "proxmox_manager": (
+                proxmox_manager is not None and proxmox_manager.is_initialized
+            ),
             "debug_manager": debug_manager is not None and debug_manager.is_initialized,
             "coordinator": coordinator is not None and coordinator.is_initialized,
             "tool_discovery": tool_discovery is not None
@@ -316,7 +318,9 @@ async def health_check() -> dict:
 async def get_available_models() -> list[LLMModel]:
     """Get available LLM models"""
     if not llm_manager:
-        raise HTTPException(status_code=500, detail="LLM manager not initialized")
+        raise HTTPException(
+            status_code=500, detail="LLM manager not initialized"
+        )
 
     return await llm_manager.get_available_models()
 

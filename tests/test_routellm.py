@@ -2,6 +2,7 @@ import os
 import sys
 from importlib.machinery import SourceFileLoader
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -19,7 +20,7 @@ async def async_noop(*args, **kwargs):
     raise RuntimeError("no network")
 
 
-def reload_server_with_env(env: dict):
+def reload_server_with_env(env: dict) -> Any:
     # Ensure a fresh import of test_server with the provided env vars
     for k, v in env.items():
         if v is None and k in os.environ:
